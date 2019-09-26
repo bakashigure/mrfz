@@ -1,6 +1,8 @@
 # 明日方舟自动刷图脚本 v0.01
 
 基于Python 3.7.3 64-bit
+下载请前往releases页面，因为大小超过25mb,这里放不下。
+https://github.com/bakashigure/mrfz/releases/tag/0.0.1
 
 请在windows上运行模拟器，强烈建议设置模拟器窗口大小为1440x960,同时请确保模拟器不会卡顿，因为脚本是根据时间来运行的。
 ！请以管理员权限运行，因为需要模拟鼠标点击，无论在编译器中还是exe，都需要管理员权限。！（pyinstaller打包出来的exe是真的大啊）
