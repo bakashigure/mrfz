@@ -17,3 +17,5 @@ https://github.com/bakashigure/mrfz/releases/tag/0.0.1
 
 未来可能实现的功能：
 TBD
+
+# 使用本程序带来的一切后果自负
