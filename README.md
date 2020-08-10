@@ -1,5 +1,9 @@
 # 明日方舟自动刷图脚本 v0.04
 
+
+###TODO  
+'使用图片识别来刷图'
+
 基于Python 3.7.3 64-bit
 下载请前往releases页面，因为大小超过25mb,这里放不下。
 https://github.com/bakashigure/mrfz/releases/tag/0.04
@@ -16,4 +20,4 @@ https://github.com/bakashigure/mrfz/releases/tag/0.04
 
 
 
-# 使用本程序带来的一切后果自负
+# 本程序应该不会造成什么奇怪的后果
