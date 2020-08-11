@@ -1,10 +1,10 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
+
 import os
 import base64
 import pyautogui as pag
 from PIL import Image
 from io import BytesIO
-
 from app.imgbb import imgbase64c
 
 
@@ -22,11 +22,14 @@ class idImg:
 
         self.img_byte_start=base64.b64decode(imgbase64c.mission_start)
         self.img_start=Image.open(BytesIO(self.img_byte_start))
+    def locateSuccess(self):
+        return pag.locate(self.img_success,'screensshot.png',confidence=0.7)
 
 
 sb=idImg()
 
-#pag.locate()
+sb=pag.locate('2.png','1.png',confidence=0.5)
 
-location=pag.locateOnScreen(sb.img_success,confidence=0.4)
-print(location)
+#location=pag.locateOnScreen(sb.img_success,confidence=0.4)
+#print(location)
+print(sb)
