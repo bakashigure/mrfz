@@ -15,6 +15,8 @@ import os
 import base64
 from PIL import Image
 from io import BytesIO
+from io import TextIOWrapper
+import sys
 
 import pyautogui as pag
 import win32con
@@ -22,29 +24,66 @@ import win32gui
 
 class idImg:
     def __init__(self):
+
+        self.game_pid=0
+
         self.img_byte_success=base64.b64decode(imgbase64c.mission_success)
         self.img_success=Image.open(BytesIO(self.img_byte_success))
 
         self.img_byte_fail=base64.b64decode(imgbase64c.mission_fail)
         self.img_fail=Image.open(BytesIO(self.img_byte_fail))
 
+        self.img_byte_ready=base64.b64decode(imgbase64c.mission_ready)
+        self.img_ready=Image.open(BytesIO(self.img_byte_ready))
+
         self.img_byte_start=base64.b64decode(imgbase64c.mission_start)
         self.img_start=Image.open(BytesIO(self.img_byte_start))
 
-    self.list_suc_or_fail=[self.img_success,self.img_fail]
+        self.img_byte_auto_on=base64.b64decode(imgbase64c.mission_auto_on)
+        self.img_on=Image.open(BytesIO(self.img_byte_auto_on))
 
-    def locateImg(self):
+        self.img_byte_auto_off=base64.b64decode(imgbase64c.mission_auto_off)
+        self.img_off=Image.open(BytesIO(self.img_byte_auto_off))        
+
+        self.list_suc_or_fail=[self.img_success,self.img_fail]
+        self.list_auto_on_off=[self.img_on,self.img_off]
+        self.list_ready_start=[self.img_ready,self.img_success]
+
+        self.list_all=[self.img_success,self.img_fail,self.img_start,self.img_ready,self.img_on,self.img_off]
+    
+    def locateImg(self,imageName):
     # TODO: get screenshots of game from background
-        sb=pag.locate(self.img_success,pag.screenshot(),confidence=0.7)
-        if sb !=None:
-            return sb
-        sb=pag.locate(self.img_fail,pag.screenshot(),confidence=0.7)
+        return pag.locate(imageName,pag.screenshot(),confidence=0.7)
     
     def locateSucOrFail(self):
         for iden in self.list_suc_or_fail:
             sb=pag.locate(iden,pag.screenshot(),confidence=0.7)
+            if(sb==None):
+                print(sb)
+    
+    '''
+    def locateStart(self):
+        return pag.locate(self.img_start,pag.screenshot(),confidence=0.7)
+    
+    def locateReady(self):
+        return pag.locate(self.img_ready,pag.screenshot(),confidence=0.7)
+
+    def locateAutoOn(self):
+        return pag.locate(self.img_on,pag.screenshot(),confidence=0.7)
+    
+    def locateAutoOff(self):
+        return pag.locate(self.img_off,pag.screenshot(),confidence=0.7)
 
     
+    '''
+
+    def locateAll(self):
+        for iden in self.list_all:
+            sb=pag.locate(iden,pag.screenshot(),confidence=0.7)
+            if(sb!=None):
+                print(sb)
+                pag.click(sb)
+            
 
 # 摸鱼time
 def sleep(sec):
@@ -80,20 +119,23 @@ def init():
             hwnd_title.update({hwnd: win32gui.GetWindowText(hwnd)})
     win32gui.EnumWindows(get_all_hwnd, 0)
     for h, t in hwnd_title.items():
-        if t is not "":
+        if t != "":
             c = (f'{h} {t}')
             result = re.match(r'[0-9]* (.*)模拟器(.*)', c, flags=0)
             if result != None:
                 gamehwndd = eval(re.sub(r"\D", "", result.group(0)))
                 print("获取到游戏句柄 |",gamehwndd)
                 sleep(1)
-                break
+                return gamehwndd
+                
     else:
-        print("未找到游戏进程,请确保有一个进程名包含\'模拟器\',例如\'MuMu模拟器\'")
-        print("请打开模拟器后重试,按任意键退出程序", "\n")
-        msvcrt.getch()
-        os._exit(1)
-    return gamehwndd
+        
+        for h,t in hwnd_title.items():
+            if t != "":
+                print(' |','%-10s'%h,'%.50s'%t)
+        print("\n未找到包含'模拟器'字样的游戏进程,请手动指定进程hwnd")
+        return eval(input("请打开模拟器后重试,或手动输入hwnd(进程名前的数字):"))
+
 
 
 # 弱智编译器
@@ -118,6 +160,26 @@ def readconfig():
 
 
 def main():
+
+    sb=idImg()
+    sb.game_pid=init()
+
+
+
+    print(sb.game_pid)
+
+    print(r"\
+        ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟\
+        ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣\
+        ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾\
+        ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿\
+        ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿\
+        ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿\
+        ⢸⠇⡜⣿⡟⠄⠄⠄⠈⠙⣿⣿⣿⣿⣿⣿⣿⣿⠟⣱⣻⣿⣿⣿⣿⣿⠟⠁⢳⠃⣿⣿⣿\
+        ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿")
+
+
+    '''
     gamehwnd=init()
     while(1):
         os.system("cls")
@@ -193,7 +255,7 @@ def main():
                     pag.moveTo(gamex, gamey-50, duration=0)
                     sleep(toc)
                     pag.click()
-                    #print ("Start : %s" % time.ctime())
+                    #print ("START : %s" % time.ctime())
                     print("现在可以切换至其他应用,会自动切回游戏模拟点击")
                     print("正在代肝 ( 1 /", times, ")", "  |", currentTime())
                     sleep(tor)
@@ -247,7 +309,7 @@ def main():
             msvcrt.getch()
         else:
             os._exit(1)
-
+    '''
 
 if __name__ == '__main__':
     main()
