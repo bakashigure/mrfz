@@ -18,9 +18,9 @@ from io import BytesIO
 from io import TextIOWrapper
 import sys
 
+import cv2
 import pyautogui as pag
-import win32con
-import win32gui
+import win32con,win32gui,win32ui
 
 class idImg:
     def __init__(self):
@@ -51,9 +51,9 @@ class idImg:
 
         self.list_all=[self.img_success,self.img_fail,self.img_start,self.img_ready,self.img_on,self.img_off]
     
-    def locateImg(self,imageName):
+    def locateImg(self,imageName,screenshots):
     # TODO: get screenshots of game from background
-        return pag.locate(imageName,pag.screenshot(),confidence=0.7)
+        return pag.locate(imageName,screenshots,confidence=0.7)
     
     def locateSucOrFail(self):
         for iden in self.list_suc_or_fail:
@@ -97,8 +97,8 @@ def currentHwnd():
 def switchHwnd(hwnd):
     ctypes.windll.user32.SwitchToThisWindow(hwnd, True)
     win32gui.ShowWindow(hwnd, win32con.SW_SHOWNA)
-    win32gui.SetForegroundWindow(hwnd)
-    return None
+    #win32gui.SetForegroundWindow(hwnd)
+    
 
 # 当前时间带日期
 def nowTime():
@@ -118,6 +118,8 @@ def init():
         if win32gui.IsWindow(hwnd) and win32gui.IsWindowEnabled(hwnd) and win32gui.IsWindowVisible(hwnd):
             hwnd_title.update({hwnd: win32gui.GetWindowText(hwnd)})
     win32gui.EnumWindows(get_all_hwnd, 0)
+
+    '''
     for h, t in hwnd_title.items():
         if t != "":
             c = (f'{h} {t}')
@@ -127,14 +129,14 @@ def init():
                 print("获取到游戏句柄 |",gamehwndd)
                 sleep(1)
                 return gamehwndd
-                
-    else:
+    '''  
+    #else:
         
-        for h,t in hwnd_title.items():
-            if t != "":
-                print(' |','%-10s'%h,'%.50s'%t)
-        print("\n未找到包含'模拟器'字样的游戏进程,请手动指定进程hwnd")
-        return eval(input("请打开模拟器后重试,或手动输入hwnd(进程名前的数字):"))
+    for h,t in hwnd_title.items():
+        if t != "":
+            print(' |','%-10s'%h,'%.50s'%t)
+    print("\n未找到包含'模拟器'字样的游戏进程,请手动指定进程hwnd")
+    return eval(input("请打开模拟器后重试,或手动输入hwnd(进程名前的数字):"))
 
 
 
@@ -158,16 +160,89 @@ def readconfig():
     '''
     return tor,toc
 
+def isAdmin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        print("模拟鼠标点击需要管理员权限，请重试.")
+        print("按任意键退出.")
+        msvcrt.getch()
+        return False
+
+def getAppScreenshot(pid):
+    clsname=win32gui.GetClassName(pid)
+    pid=win32gui.FindWindow(clsname,None)
+    left,top,right,bot=win32gui.GetWindowRect(pid)
+    width=right-left
+    height=bot-top
+    print("__log__: ","left: ",left,"  top: ",top,"  right: ",right,"  left: ",left)
+    print("__log__: ","width: ",width,"  height: ",height)
+    hWndDC = win32gui.GetWindowDC(pid)
+    mfcDC = win32ui.CreateDCFromHandle(hWndDC)
+    saveDC = mfcDC.CreateCompatibleDC()
+    saveBitMap = win32ui.CreateBitmap()
+    saveBitMap.CreateCompatibleBitmap(mfcDC,width,height)
+    saveDC.SelectObject(saveBitMap)
+    saveDC.BitBlt((0,0), (width,height), mfcDC, (0, 0), win32con.SRCCOPY)
+    bmpinfo = saveBitMap.GetInfo()
+    bmpstr = saveBitMap.GetBitmapBits(True)
+    im_PIL = Image.frombuffer('RGB',(bmpinfo['bmWidth'],bmpinfo['bmHeight']),bmpstr,'raw','BGRX',0,1)
+    x=left+width*0.9069
+    y=top+height*0.85
+    return im_PIL,x,y
 
 def main():
 
+    
+    if isAdmin():
+        pass
+    else:
+        os._exit(1)
+    
+
     sb=idImg()
-    sb.game_pid=init()
+    while(1):
+        sb.game_pid=init()
+        
+        
+
+
+        print(sb.game_pid)
+
+        im_PIL,x,y=getAppScreenshot(sb.game_pid)
+        t=sb.locateImg(sb.img_ready,im_PIL)
+        if t != None:
+            os.system("cls")
+            print(sb.game_pid)
+            switchHwnd(sb.game_pid)
+            pag.click(x,y)
+            print(t)
+        else:
+            os.system("cls")
+            print("未在窗口找到蓝色\"开始行动\"按钮，少侠请重新来过。")
+            continue
+        
+        
+        
+        for i in range(3):
+            sleep(2) #2s检测一次
+            im_PIL,x,y=getAppScreenshot(sb.game_pid)
+            t=sb.locateImg(sb.img_start,im_PIL)
+            if t !=None:
+                print("已找到红色[开始行动]按钮，即将开始行动")
+                sleep(2)
+                break
+            else:
+                print("第",i,"次检测，未找到红色[开始行动]按钮，两秒后进行下一次检测")
 
 
 
-    print(sb.game_pid)
 
+        
+        
+    '''
+
+ 
     print(r"\
         ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟\
         ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣\
@@ -179,7 +254,8 @@ def main():
         ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿")
 
 
-    '''
+
+    
     gamehwnd=init()
     while(1):
         os.system("cls")
