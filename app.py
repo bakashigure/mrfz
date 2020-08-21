@@ -18,15 +18,16 @@ from io import BytesIO
 from io import TextIOWrapper
 from PIL import Image
 import pyautogui as pag
-import win32con, win32gui, win32ui,win32api
+import win32con, win32gui, win32ui, win32api
 import cv2
-from app.imgbb import imgbase64c
+from imgbb import imgbase64c
 
 
 class idImg:
     game_times = 0
     game_pid = 0
-    game_kind=1
+    game_kind = 1
+    game_title = ""
 
     def __init__(self):
         self.img_byte_success = base64.b64decode(imgbase64c.mission_success)
@@ -47,44 +48,38 @@ class idImg:
         self.img_byte_auto_off = base64.b64decode(imgbase64c.mission_auto_off)
         self.img_off = Image.open(BytesIO(self.img_byte_auto_off))
 
-        self.list_suc_or_fail = [self.img_success, self.img_fail]
-        self.list_auto_on_off = [self.img_on, self.img_off]
-        self.list_ready_start = [self.img_ready, self.img_success]
+        self.img_byte_playing = base64.b64decode(imgbase64c.mission_playing)
+        self.img_playing = Image.open(BytesIO(self.img_byte_playing))
 
         self.list_all = [
+            self.img_ready,
+            self.img_start,
+            self.img_playing,
             self.img_success,
             self.img_fail,
-            self.img_start,
-            self.img_ready,
-            self.img_on,
-            self.img_off,
         ]
 
+
+        self.list_game = {
+            self.img_byte_ready:'ready',
+            self.img_byte_start:'start',
+            self.img_byte_playing:'playing',
+            self.img_byte_success:'success',
+            self.img_byte_fail:'fail',
+        }
+
+
+
+    def locate2(self,screenshots):
+        for items,ide in self.list_game.items():
+            img=Image.open(BytesIO(items))
+            if (pag.locate(img,screenshots,confidence=0.7)) != None:
+                return ide
+
     def locateImg(self, imageName, screenshots):
-        # TODO: get screenshots of game from background
         return pag.locate(imageName, screenshots, confidence=0.7)
 
-    def locateSucOrFail(self):
-        for iden in self.list_suc_or_fail:
-            sb = pag.locate(iden, pag.screenshot(), confidence=0.7)
-            if sb == None:
-                print(sb)
 
-    """
-    def locateStart(self):
-        return pag.locate(self.img_start,pag.screenshot(),confidence=0.7)
-    
-    def locateReady(self):
-        return pag.locate(self.img_ready,pag.screenshot(),confidence=0.7)
-
-    def locateAutoOn(self):
-        return pag.locate(self.img_on,pag.screenshot(),confidence=0.7)
-    
-    def locateAutoOff(self):
-        return pag.locate(self.img_off,pag.screenshot(),confidence=0.7)
-
-    
-    """
     def locateAll(self):
         for iden in self.list_all:
             sb = pag.locate(iden, pag.screenshot(), confidence=0.7)
@@ -93,11 +88,28 @@ class idImg:
                 pag.click(sb)
 
 
+class GAMEKINDS(Enum):
+    主线 = 1
+    剿灭 = 2
+    活动 = 3
 
-class gameKinds(Enum):
-    mainline=1
-    annihilate=2
-    activity=3
+
+class UI:
+    def __init__(self, title, hwnd, kind, times):
+        self.hwnd = hwnd
+        self.title = title
+        self.kind = kind
+        self.times = times
+
+    def update(self, current_cnt, msg):
+        os.system("cls")
+        self.sb = f"""
+    正在监视进程: {self.hwnd}  {self.title} |  当前时间 {currentTime()}
+    关卡种类: {self.kind} , 正在进行第{current_cnt}次，共{self.times}次
+    状态:{msg}
+    """
+        print(self.sb)
+        # sys.stdout.flush()
 
 
 # 摸鱼time
@@ -121,18 +133,13 @@ def switchHwnd(hwnd):
     except:
         pass
     try:
-        win32api.keybd_event(13,0,0,0) # 发送一次回车事件，不然无法置顶游戏窗口 这也算是神秘bug之一吧
+        win32api.keybd_event(13, 0, 0, 0)  # 发送一次回车事件，不然无法置顶游戏窗口 这也算是神秘bug之一吧
         win32gui.SetForegroundWindow(hwnd)
     except:
         pass
 
 
-# 当前时间带日期
-def nowTime():
-    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-
-
-# 当前时间不带日期
+# 当前时间
 def currentTime():
     return time.strftime("%H:%M:%S", time.localtime(time.time()))
 
@@ -170,26 +177,33 @@ def init():
             if t != "":
                 print(" |", "%-10s" % h, "%.50s" % t)
         print("\n未找到包含'模拟器'字样的游戏进程,请手动指定进程hwnd")
-        print("例子: 如您看到[   |114514 MuMu模拟器   ]，请输入114514")
-        return eval(input("请打开模拟器后重试,或手动输入hwnd(进程名前的数字):"))
+        print("例子: 如您看到[   | 114514 MuMu模拟器   ]，请输入114514")
+        hwnd = eval(input("请打开模拟器后重试,或手动输入hwnd(进程名前的数字):"))
+        name = hwnd_title[hwnd]
+        return hwnd, name
 
     elif n == 1:
         print("找到了一个可能是模拟器的进程[ ", game_lists[0].group(0), " ]")
         case = eval(input("是它吗? 输入1确定，输入0手动指定进程:"))
         if case == 1:
-            return game_lists[0].group(1)
+            name = hwnd_title[int(game_lists[0].group(1))]
+            return game_lists[0].group(1), name
         elif case == 0:
             for h, t in hwnd_title.items():
                 if t != "":
                     print(" |", "%-10s" % h, "%.50s" % t)
-            return eval(input("手动输入hwnd(进程名前的数字):"))
+                    hwnd = eval(input("手动输入hwnd(进程名前的数字):"))
+                    name = hwnd_title[hwnd]
+                    return hwnd, name
 
     elif n > 1:
         print("找到了多个包含模拟字样的进程，您可能想多开? 请手动指定进程hwnd(进程名前的数字)")
         for h, t in hwnd_title.items():
             if t != "":
                 print(" |", "%-10s" % h, "%.50s" % t)
-        return eval(input("手动输入hwnd(进程名前的数字):"))
+        hwnd = eval(input("手动输入hwnd(进程名前的数字):"))
+        name = hwnd_title[hwnd]
+        return hwnd, name
 
 
 # 弱智编译器
@@ -221,23 +235,23 @@ def isAdmin():
 
 
 def getAppScreenshot(pid):
-    #try:
-    #clsname = win32gui.GetClassName(pid)
-    #pid = win32gui.FindWindow(clsname, None)
-    pid=int(pid)
+    # try:
+    # clsname = win32gui.GetClassName(pid)
+    # pid = win32gui.FindWindow(clsname, None)
+    pid = int(pid)
     left, top, right, bot = win32gui.GetWindowRect(pid)
     width = right - left
     height = bot - top
     print(
-            "__log__: ",
-            "left: ",
-            left,
-            "  top: ",
-            top,
-            "  right: ",
-            right,
-            "  left: ",
-            left,
+        "__log__: ",
+        "left: ",
+        left,
+        "  top: ",
+        top,
+        "  right: ",
+        right,
+        "  left: ",
+        left,
     )
     print("__log__: ", "width: ", width, "  height: ", height)
     hWndDC = win32gui.GetWindowDC(pid)
@@ -250,16 +264,10 @@ def getAppScreenshot(pid):
     bmpinfo = saveBitMap.GetInfo()
     bmpstr = saveBitMap.GetBitmapBits(True)
     im_PIL = Image.frombuffer(
-            "RGB",
-            (bmpinfo["bmWidth"], bmpinfo["bmHeight"]),
-            bmpstr,
-            "raw",
-            "BGRX",
-            0,
-            1,
-        )
-    return im_PIL,left,width,top,height
-    #except:
+        "RGB", (bmpinfo["bmWidth"], bmpinfo["bmHeight"]), bmpstr, "raw", "BGRX", 0, 1,
+    )
+    return im_PIL, left, width, top, height
+    # except:
     #    print("errorrrrrrrrrrrrrrrr!!")
     #    msvcrt.getch()
     #    os._exit(1)
@@ -306,25 +314,22 @@ def main():
         os._exit(1)
 
     sb = idImg()
-    sb.game_pid = init()
-    sb.game_kind=eval(input("请输入关卡种类(1为主线，2为剿灭，3为夏活复刻[粉色开始行动字样]: "))
+    sb.game_pid, sb.game_title = init()
+    sb.game_kind = eval(input("请输入关卡种类(1为主线，2为剿灭，3为夏活复刻[粉色开始行动字样]: "))
     sb.game_times = eval(input("请输入代刷的次数(当前体力/每关耗体): "))
+    ui = UI(sb.game_pid, sb.game_title, GAMEKINDS(sb.game_kind).name, sb.game_times)
+
     for t in range(sb.game_times):
 
         while(1):
-            im_PIL, left,width,top,height = getAppScreenshot(sb.game_pid)
-            x = left + width * 0.9069
-            y = top + height * 0.85
-            result = sb.locateImg(sb.img_ready, im_PIL)
-            if result != None:
+            im_PIL, left, width, top, height = getAppScreenshot(sb.game_pid)
+            result=sb.locate2(im_PIL)
+            if result =='ready':
+                x = left + width * 0.9069
+                y = top + height * 0.85
                 os.system("cls")
-                print("指定的进程hwnd: ",sb.game_pid)
-                print("指定的关卡种类: ",gameKinds(sb.game_kind))
-                print("正在代刷第",t+1,"次,共计",sb.game_times,"次\n\n")
-
-                print("已找到蓝色开始行动按钮，即将进行下一步")
-
-                current_hwnd=currentHwnd()
+                ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
+                current_hwnd = currentHwnd()
                 switchHwnd(sb.game_pid)
                 sleep(1)
                 pag.click(x, y)
@@ -333,31 +338,19 @@ def main():
                 except:
                     pass
                 print(result)
-                break
-            else:
-                os.system("cls")
-                print("指定的进程hwnd: ",sb.game_pid)
-                print("指定的关卡种类: ",gameKinds(sb.game_kind))
-                print("正在代刷第",t+1,"次,共计",sb.game_times,"次\n\n")
-
-                print('请打开到右下角蓝色"开始行动"按钮，会自动识别。')
-            sleep(2)
-
-        while(1):
-            sleep(2)  # 2s检测一次
-            im_PIL, left,width,top,height = getAppScreenshot(sb.game_pid)
-            x = left + width * 0.8701
-            y = top + height * 0.7716
-            result = sb.locateImg(sb.img_start, im_PIL)
-            if result != None:
-                os.system("cls")
-                print("指定的进程hwnd: ",sb.game_pid)
-                print("指定的关卡种类: ",gameKinds(sb.game_kind))
-                print("正在代刷第",t+1,"次,共计",sb.game_times,"次\n\n")
-                #1253*625
-                print("已找到红色开始行动按钮，即将进行下一步")
                 
-                current_hwnd=currentHwnd()
+                '''
+                else:
+                    os.system("cls")
+                    ui.update(1, '请打开到右下角蓝色"开始行动"按钮，会自动识别。')
+                sleep(2)
+                '''
+
+            elif result=='start':
+                x = left + width * 0.8701
+                y = top + height * 0.7716
+                ui.update(t, "已找到红色开始行动按钮，即将进行下一步")
+                current_hwnd = currentHwnd()
                 switchHwnd(sb.game_pid)
                 sleep(1)
                 pag.click(x, y)
@@ -366,18 +359,33 @@ def main():
                 except:
                     pass
                 print(result)
-                break
+                
+            
+            elif result == 'playing':
+                ui.update(t, "正在进行代理...")
+            
+            elif result == 'success':
+                ui.update(t,"本关已完成，即将进行下一次.")
+                x = left + width * 0.8701
+                y = top + height * 0.7716
+                current_hwnd = currentHwnd()
+                switchHwnd(sb.game_pid)
+                sleep(1)
+                pag.click(x, y)
+                try:
+                    switchHwnd(current_hwnd)
+                except:
+                    pass
+                print(result)
+                
+            
             else:
-                os.system("cls")
-                print("指定的进程hwnd: ",sb.game_pid)
-                print("指定的关卡种类: ",gameKinds(sb.game_kind))
-                print("正在代刷第",t+1,"次,共计",sb.game_times,"次\n\n")
-
-                print('未找到红色"开始行动"按钮，正在尝试自动识别。')
+                ui.update(t,"未识别到内容，正在尝试下一次识别")
+            
             sleep(2)
-               
 
-    """
+
+"""
 
  
     print(r"\

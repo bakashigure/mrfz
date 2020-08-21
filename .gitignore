@@ -109,3 +109,4 @@ debug.py
 .vscode
 .vscode/
 /.vscode
+.vscode/settings.json
