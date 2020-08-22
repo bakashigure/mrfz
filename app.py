@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 # @Time : 2019/9/26
-# @Author : twitter@bakashigure
+# @Author : Twitter@bakashigure
 # @Site : https://github.com/bakashigure/mrfz
 # @Software: 明日方舟代肝脚本
 
 
-from enum import Enum
+
 import ctypes
 import msvcrt
 import re
@@ -16,14 +16,15 @@ import base64
 import sys
 from io import BytesIO
 from io import TextIOWrapper
+from enum import Enum
 from PIL import Image
 import pyautogui as pag
 import win32con, win32gui, win32ui, win32api
-import cv2
+
 from imgbb import imgbase64c
 
 
-class idImg:
+class IDIMG:
     game_times = 0
     game_pid = 0
     game_kind = 1
@@ -31,26 +32,26 @@ class idImg:
 
     def __init__(self):
         self.img_byte_success = base64.b64decode(imgbase64c.mission_success)
-        self.img_success = Image.open(BytesIO(self.img_byte_success))
+        #self.img_success = Image.open(BytesIO(self.img_byte_success))
 
         self.img_byte_fail = base64.b64decode(imgbase64c.mission_fail)
-        self.img_fail = Image.open(BytesIO(self.img_byte_fail))
+        #self.img_fail = Image.open(BytesIO(self.img_byte_fail))
 
         self.img_byte_ready = base64.b64decode(imgbase64c.mission_ready)
-        self.img_ready = Image.open(BytesIO(self.img_byte_ready))
+        #self.img_ready = Image.open(BytesIO(self.img_byte_ready))
 
         self.img_byte_start = base64.b64decode(imgbase64c.mission_start)
-        self.img_start = Image.open(BytesIO(self.img_byte_start))
+        #self.img_start = Image.open(BytesIO(self.img_byte_start))
 
         self.img_byte_auto_on = base64.b64decode(imgbase64c.mission_auto_on)
-        self.img_on = Image.open(BytesIO(self.img_byte_auto_on))
+        #self.img_on = Image.open(BytesIO(self.img_byte_auto_on))
 
         self.img_byte_auto_off = base64.b64decode(imgbase64c.mission_auto_off)
-        self.img_off = Image.open(BytesIO(self.img_byte_auto_off))
+        #self.img_off = Image.open(BytesIO(self.img_byte_auto_off))
 
         self.img_byte_playing = base64.b64decode(imgbase64c.mission_playing)
-        self.img_playing = Image.open(BytesIO(self.img_byte_playing))
-
+        #self.img_playing = Image.open(BytesIO(self.img_byte_playing))
+        '''
         self.list_all = [
             self.img_ready,
             self.img_start,
@@ -58,7 +59,7 @@ class idImg:
             self.img_success,
             self.img_fail,
         ]
-
+        '''
 
         self.list_game = {
             self.img_byte_ready:'ready',
@@ -70,22 +71,20 @@ class idImg:
 
 
 
-    def locate2(self,screenshots):
+    def locate(self,screenshots,width,height):
         for items,ide in self.list_game.items():
             img=Image.open(BytesIO(items))
-            if (pag.locate(img,screenshots,confidence=0.7)) != None:
+            img=img.resize((int(width/1440*img.size[0]),int(width/1440*img.size[1])),Image.ANTIALIAS)
+            if (res:=pag.locate(img,screenshots,confidence=0.7)) != None:
+                print(img.size[0],img.size[1])
+                print(res)
                 return ide
-
-    def locateImg(self, imageName, screenshots):
-        return pag.locate(imageName, screenshots, confidence=0.7)
-
-
-    def locateAll(self):
-        for iden in self.list_all:
-            sb = pag.locate(iden, pag.screenshot(), confidence=0.7)
-            if sb != None:
-                print(sb)
-                pag.click(sb)
+    def locateAuto(self,screenshots,width,height):
+        img=Image.open(BytesIO(self.img_byte_auto_off))
+        img=img.resize((int(width/1440*img.size[0]),int(width/1440*img.size[1])),Image.ANTIALIAS)
+        if(pag.locate(img,screenshots,confidence=0.7)!=None):
+            return False
+        return True
 
 
 class GAMEKINDS(Enum):
@@ -104,8 +103,18 @@ class UI:
     def update(self, current_cnt, msg):
         os.system("cls")
         self.sb = f"""
+    ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
+    ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
+    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.0
+    ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿      https://github.com/bakashigure/mrfz
+    ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿
+    ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿
+    ⢸⠇⡜⣿⡟⠄⠄⠄⠈⠙⣿⣿⣿⣿⣿⣿⣿⣿⠟⣱⣻⣿⣿⣿⣿⣿⠟⠁⢳⠃⣿⣿⣿
+    ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿"
+
+
     正在监视进程: {self.hwnd}  {self.title} |  当前时间 {currentTime()}
-    关卡种类: {self.kind} , 正在进行第{current_cnt}次，共{self.times}次
+    关卡种类: {self.kind} , 正在进行第{current_cnt+1}次，共{self.times}次
     状态:{msg}
     """
         print(self.sb)
@@ -166,10 +175,6 @@ def init():
             result = re.match(r"([0-9]*) (.*)模拟器(.*)", c, flags=0)
             if result != None:
                 game_lists.append(result)
-                # gamehwndd = eval(re.sub(r"\D", "", result.group(0)))
-                # print("获取到游戏句柄 |",h)
-                # sleep(1)
-                # return gamehwndd
 
     if (n := len(game_lists)) == 0:
 
@@ -192,9 +197,9 @@ def init():
             for h, t in hwnd_title.items():
                 if t != "":
                     print(" |", "%-10s" % h, "%.50s" % t)
-                    hwnd = eval(input("手动输入hwnd(进程名前的数字):"))
-                    name = hwnd_title[hwnd]
-                    return hwnd, name
+            hwnd = eval(input("手动输入hwnd(进程名前的数字):"))
+            name = hwnd_title[hwnd]
+            return hwnd, name
 
     elif n > 1:
         print("找到了多个包含模拟字样的进程，您可能想多开? 请手动指定进程hwnd(进程名前的数字)")
@@ -205,28 +210,6 @@ def init():
         name = hwnd_title[hwnd]
         return hwnd, name
 
-
-# 弱智编译器
-
-
-# 读取配置文件
-def readconfig():
-    tor = 130
-    toc = 3
-    # tor为 time of round 每局所花费的时间
-    # toc为 time of click 每次点击间隔，考虑网络延时及系统性能，设置了一个较大的值
-    """ 
-    #怪麻烦的 写死算了
-    with open(r'./config.txt', 'r') as cfg:
-        list1 = cfg.readlines()
-        tor = int(
-            re.match(r'Time_Of_EveryRound:"([0-9]*)"', list1[0], flags=0).group(1))
-        toc = int(
-            re.match(r'Time_Of_EveryClick:"([0-9]*)"', list1[1], flags=0).group(1))
-    """
-    return tor, toc
-
-
 def isAdmin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -235,42 +218,40 @@ def isAdmin():
 
 
 def getAppScreenshot(pid):
-    # try:
-    # clsname = win32gui.GetClassName(pid)
-    # pid = win32gui.FindWindow(clsname, None)
-    pid = int(pid)
-    left, top, right, bot = win32gui.GetWindowRect(pid)
-    width = right - left
-    height = bot - top
-    print(
-        "__log__: ",
-        "left: ",
-        left,
-        "  top: ",
-        top,
-        "  right: ",
-        right,
-        "  left: ",
-        left,
-    )
-    print("__log__: ", "width: ", width, "  height: ", height)
-    hWndDC = win32gui.GetWindowDC(pid)
-    mfcDC = win32ui.CreateDCFromHandle(hWndDC)
-    saveDC = mfcDC.CreateCompatibleDC()
-    saveBitMap = win32ui.CreateBitmap()
-    saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
-    saveDC.SelectObject(saveBitMap)
-    saveDC.BitBlt((0, 0), (width, height), mfcDC, (0, 0), win32con.SRCCOPY)
-    bmpinfo = saveBitMap.GetInfo()
-    bmpstr = saveBitMap.GetBitmapBits(True)
-    im_PIL = Image.frombuffer(
-        "RGB", (bmpinfo["bmWidth"], bmpinfo["bmHeight"]), bmpstr, "raw", "BGRX", 0, 1,
-    )
-    return im_PIL, left, width, top, height
-    # except:
-    #    print("errorrrrrrrrrrrrrrrr!!")
-    #    msvcrt.getch()
-    #    os._exit(1)
+    try:
+        pid = int(pid)
+        left, top, right, bot = win32gui.GetWindowRect(pid)
+        width = right - left
+        height = bot - top
+        print(
+            "__log__: ",
+            "left: ",
+            left,
+            "  top: ",
+            top,
+            "  right: ",
+            right,
+            "  bottom: ",
+            bot,
+        )
+        print("__log__: ", "width: ", width, "  height: ", height)
+        hWndDC = win32gui.GetWindowDC(pid)
+        mfcDC = win32ui.CreateDCFromHandle(hWndDC)
+        saveDC = mfcDC.CreateCompatibleDC()
+        saveBitMap = win32ui.CreateBitmap()
+        saveBitMap.CreateCompatibleBitmap(mfcDC, width, height)
+        saveDC.SelectObject(saveBitMap)
+        saveDC.BitBlt((0, 0), (width, height), mfcDC, (0, 0), win32con.SRCCOPY)
+        bmpinfo = saveBitMap.GetInfo()
+        bmpstr = saveBitMap.GetBitmapBits(True)
+        im_PIL = Image.frombuffer(
+            "RGB", (bmpinfo["bmWidth"], bmpinfo["bmHeight"]), bmpstr, "raw", "BGRX", 0, 1,
+        )
+        return im_PIL, left, width, top, height
+    except:
+        print("出现神必错误。")
+        msvcrt.getch()
+        os._exit(1)
 
 
 def main():
@@ -287,17 +268,16 @@ def main():
        随后在软件内确认开始后，会自动进行识别刷图.
        游戏可以放在后台，但请不要最小化.
 
-    1.本程序需要管理员权限，这是因为模拟鼠标点击所需，您也可以通过github上的开源代码自己在ide中运行.
+    1.本程序需要管理员权限，这是因为模拟鼠标点击所需，您也可以通过Github上的开源代码自己在IDE中运行.
     2.本程序支持多开，请自行指定正确的进程句柄.
     3.本软件工作原理是通过对处于后台/前台的游戏窗口进行截图并识别当前处于哪一步，不会对游戏进程进行任何的操作.
-    4.建议分辨率1440*810，过大或过小的窗口可能造成识别失败，如长时间识别失败本程序会置顶并向您发出警告(尚未实现).
-    5.暂时还没有对关卡结束后升级处理.
+    4.建议分辨率1440*810，可以缩放窗口，但过大或过小的窗口可能造成识别失败.
     6.几乎没有错误处理，所以请不要在输入数字的地方输入其他字符.
-    7.请不要在本程序内选取文字，这样会卡住程序无法运行.
+
 
 
     附1: 开源项目地址 https://github.com/bakashigure/mrfz  (请不要用于商业化)
-    附2: 我的官服id 孭织#416  (孭读mie)
+    附2: 我的官服id 孭纸#416  (孭读mie)
 
     如您已阅读完毕，请按任意键继续.
     """
@@ -308,12 +288,12 @@ def main():
     if isAdmin():
         pass
     else:
-        print("模拟鼠标点击需要管理员权限，请重试.")
+        print("鼠标点击需要管理员权限，请以管理员权限运行重试.")
         print("按任意键退出.")
         msvcrt.getch()
         os._exit(1)
 
-    sb = idImg()
+    sb = IDIMG()
     sb.game_pid, sb.game_title = init()
     sb.game_kind = eval(input("请输入关卡种类(1为主线，2为剿灭，3为夏活复刻[粉色开始行动字样]: "))
     sb.game_times = eval(input("请输入代刷的次数(当前体力/每关耗体): "))
@@ -323,11 +303,15 @@ def main():
 
         while(1):
             im_PIL, left, width, top, height = getAppScreenshot(sb.game_pid)
-            result=sb.locate2(im_PIL)
+            result=sb.locate(im_PIL,width,height)
             if result =='ready':
                 x = left + width * 0.9069
                 y = top + height * 0.85
                 os.system("cls")
+                if sb.locateAuto(im_PIL,width,height) == False:
+                    ui.update(t,"您未开启代理诶，自己勾一下吧")
+                    sleep(2)
+                    continue
                 ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
                 current_hwnd = currentHwnd()
                 switchHwnd(sb.game_pid)
@@ -348,41 +332,44 @@ def main():
 
             elif result=='start':
                 x = left + width * 0.8701
-                y = top + height * 0.7716
+                y = top + height * 0.7516
                 ui.update(t, "已找到红色开始行动按钮，即将进行下一步")
                 current_hwnd = currentHwnd()
                 switchHwnd(sb.game_pid)
-                sleep(1)
+                sleep(2)
                 pag.click(x, y)
                 try:
                     switchHwnd(current_hwnd)
                 except:
                     pass
                 print(result)
+                sleep(1)
                 
             
             elif result == 'playing':
                 ui.update(t, "正在进行代理...")
+                sleep(2)
             
             elif result == 'success':
                 ui.update(t,"本关已完成，即将进行下一次.")
-                x = left + width * 0.8701
-                y = top + height * 0.7716
+                x = left + width * 0.6657
+                y = top + height * 0.5057
                 current_hwnd = currentHwnd()
                 switchHwnd(sb.game_pid)
-                sleep(1)
+                sleep(2)
                 pag.click(x, y)
                 try:
                     switchHwnd(current_hwnd)
                 except:
                     pass
                 print(result)
-                
+                sleep(1)
             
             else:
                 ui.update(t,"未识别到内容，正在尝试下一次识别")
+                sleep(2)
             
-            sleep(2)
+            
 
 
 """
