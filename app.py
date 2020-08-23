@@ -28,6 +28,7 @@ class IDIMG:
     game_times = 0
     game_pid = 0
     game_kind = 1
+    game_ann_kind=1
     game_title = ""
 
     def __init__(self):
@@ -51,6 +52,19 @@ class IDIMG:
 
         self.img_byte_playing = base64.b64decode(imgbase64c.mission_playing)
         #self.img_playing = Image.open(BytesIO(self.img_byte_playing))
+
+        self.img_byte_ann_chernob=base64.b64decode(imgbase64c.ann_chernob)
+        #self.img_ann_chernob=Image.open(BytesIO(self.img_byte_ann_chernob))
+
+        self.img_byte_ann_downtown=base64.b64decode(imgbase64c.ann_downtown)
+        #self.img_ann_downtown=Image.open(BytesIO(self.img_byte_ann_downtown))
+
+        self.img_byte_ann_outskirts=base64.b64decode(imgbase64c.ann_outskirts)
+        #self.img_ann_outskirts=Image.open(BytesIO(self.img_byte_ann_outskirts))
+
+        self.img_byte_ann_success=base64.b64decode(imgbase64c.ann_success)
+        #self.imng_ann_success=Image.open(BytesIO(self.img_byte_ann_success))
+
         '''
         self.list_all = [
             self.img_ready,
@@ -61,36 +75,62 @@ class IDIMG:
         ]
         '''
 
-        self.list_game = {
+        self.list_mainline = {
             self.img_byte_ready:'ready',
             self.img_byte_start:'start',
             self.img_byte_playing:'playing',
             self.img_byte_success:'success',
             self.img_byte_fail:'fail',
         }
+        
+        self.list_ann_level =[
+            self.img_byte_ann_chernob,
+            self.img_byte_ann_downtown,
+            self.img_byte_ann_outskirts
+        ]
+
+        self.list_ann={
+            self.img_byte_ready:'ready',
+            self.img_byte_start:'start',
+            self.img_byte_playing:'playing',
+            self.img_byte_ann_success:'success',
+        }
+        
 
 
-
-    def locate(self,screenshots,width,height):
-        for items,ide in self.list_game.items():
+    def locateMain(self,screenshots,width,height):
+        for items,ide in self.list_mainline.items():
             img=Image.open(BytesIO(items))
             img=img.resize((int(width/1440*img.size[0]),int(width/1440*img.size[1])),Image.ANTIALIAS)
-            if (res:=pag.locate(img,screenshots,confidence=0.7)) != None:
+            if (res:=pag.locate(img,screenshots,confidence=0.8)) != None:
                 print(img.size[0],img.size[1])
                 print(res)
                 return ide
-    def locateAuto(self,screenshots,width,height):
-        img=Image.open(BytesIO(self.img_byte_auto_off))
+
+    def locateAnn(self,screenshots,width,height):
+        for items,ide in self.list_ann.items():
+            img=Image.open(BytesIO(items))
+            img=img.resize((int(width/1440*img.size[0]),int(width/1440*img.size[1])),Image.ANTIALIAS)
+            if (res:=pag.locate(img,screenshots,confidence=0.8)) != None:
+                print(img.size[0],img.size[1])
+                print(res)
+                return ide
+
+    def locateAuto(self,sp_img,screenshots,width,height):
+        img=Image.open(BytesIO(sp_img))
         img=img.resize((int(width/1440*img.size[0]),int(width/1440*img.size[1])),Image.ANTIALIAS)
-        if(pag.locate(img,screenshots,confidence=0.7)!=None):
+        if(pag.locate(img,screenshots,confidence=0.8)!=None):
             return False
         return True
 
 
 class GAMEKINDS(Enum):
-    主线 = 1
+    主线或材料 = 1
     剿灭 = 2
     活动 = 3
+    切尔诺伯格=4
+    龙门外环=5
+    龙门市区=6
 
 
 class UI:
@@ -105,7 +145,7 @@ class UI:
         self.sb = f"""
     ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
     ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
-    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.0
+    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.0 build0824.203
     ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿      https://github.com/bakashigure/mrfz
     ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿
     ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿
@@ -264,7 +304,8 @@ def main():
 
     0.本程序会先试图遍历进程寻找包含模拟器三字的进程，如果结果为0，则会让您自行指定进程，
        如果结果为1，则会向您确认是否为游戏进程，如果结果大于1，则会让您手动指定进程.
-       随后需要您指定主线/活动关/剿灭,将游戏打开到右下角为开始行动的蓝色字样，并输入您希望循环刷图的次数.
+       随后需要您指定主线/剿灭,将游戏打开到右下角为开始行动的蓝色字样，
+       勾选代理作战,随后在本程序内输入您希望循环刷图的次数.
        随后在软件内确认开始后，会自动进行识别刷图.
        游戏可以放在后台，但请不要最小化.
 
@@ -273,11 +314,13 @@ def main():
     3.本软件工作原理是通过对处于后台/前台的游戏窗口进行截图并识别当前处于哪一步，不会对游戏进程进行任何的操作.
     4.建议分辨率1440*810，可以缩放窗口，但过大或过小的窗口可能造成识别失败.
     6.几乎没有错误处理，所以请不要在输入数字的地方输入其他字符.
+    7.目前仅支持[简体中文]的游戏内容，其他语言支持请联系我哈
 
 
 
-    附1: 开源项目地址 https://github.com/bakashigure/mrfz  (请不要用于商业化)
-    附2: 我的官服id 孭纸#416  (孭读mie)
+    附0: 开源项目地址 https://github.com/bakashigure/mrfz  (请不要用于商业化)
+    附1: 我的官服id 孭纸#416  (孭读mie)
+    附2: contact::bakashigure@hotmail.com
 
     如您已阅读完毕，请按任意键继续.
     """
@@ -295,230 +338,180 @@ def main():
 
     sb = IDIMG()
     sb.game_pid, sb.game_title = init()
-    sb.game_kind = eval(input("请输入关卡种类(1为主线，2为剿灭，3为夏活复刻[粉色开始行动字样]: "))
+    print(sb.game_pid)
+    sb.game_kind = eval(input("请输入关卡种类:  1.[主线/材料]   2.[剿灭] "))
+    if sb.game_kind == 2:
+        sb.game_ann_kind=eval(input("请输入剿灭关卡:  1.[切尔诺伯格]   2.[龙门外环]   3.[龙门市区]"))
     sb.game_times = eval(input("请输入代刷的次数(当前体力/每关耗体): "))
-    ui = UI(sb.game_pid, sb.game_title, GAMEKINDS(sb.game_kind).name, sb.game_times)
+    if sb.game_kind ==1:
+        ui = UI(sb.game_pid, sb.game_title, GAMEKINDS(sb.game_kind).name, sb.game_times)
+    else:
+        _gamekinds=str(GAMEKINDS(sb.game_kind).name)+"-"+str(GAMEKINDS(sb.game_ann_kind+3).name)
+        ui = UI(sb.game_pid, sb.game_title,_gamekinds, sb.game_times)
 
     for t in range(sb.game_times):
-
         while(1):
-            im_PIL, left, width, top, height = getAppScreenshot(sb.game_pid)
-            result=sb.locate(im_PIL,width,height)
-            if result =='ready':
-                x = left + width * 0.9069
-                y = top + height * 0.85
-                os.system("cls")
-                if sb.locateAuto(im_PIL,width,height) == False:
-                    ui.update(t,"您未开启代理诶，自己勾一下吧")
+            if sb.game_kind ==1 :
+                im_PIL, left, width, top, height = getAppScreenshot(sb.game_pid)
+                result=sb.locateMain(im_PIL,width,height)
+                if result =='ready':
+                    x = left + width * 0.9069
+                    y = top + height * 0.85
+                    os.system("cls")
+                    if sb.locateAuto(sb.img_byte_auto_off,im_PIL,width,height) == False:
+                        ui.update(t,"您未开启代理诶，自己勾一下吧")
+                        sleep(2)
+                        continue
+                    ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
+                    current_hwnd = currentHwnd()
+                    switchHwnd(int(sb.game_pid))
+                    sleep(1)
+                    pag.click(x, y)
+                    sleep(2)
+                    try:
+                        switchHwnd(int(current_hwnd))
+                    except:
+                        pass
+                    print(result)
+                    
+                    '''
+                    else:
+                        os.system("cls")
+                        ui.update(1, '请打开到右下角蓝色"开始行动"按钮，会自动识别。')
+                    sleep(2)
+                    '''
+
+                elif result=='start':
+                    x = left + width * 0.8701
+                    y = top + height * 0.7516
+                    ui.update(t, "已找到红色开始行动按钮，即将进行下一步")
+                    current_hwnd = currentHwnd()
+                    switchHwnd(int(sb.game_pid))
+                    sleep(2)
+                    pag.click(x, y)
+                    sleep(2)
+                    try:
+                        switchHwnd(int(current_hwnd))
+                    except:
+                        pass
+                    print(result)
+
+                
+                elif result == 'playing':
+                    ui.update(t, "代理指挥作战正常运行中...")
+                    sleep(2)
+                
+                elif result == 'success':
+                    ui.update(t,"本关已完成，即将进行下一次.")
+                    x = left + width * 0.6657
+                    y = top + height * 0.5057
+                    try:
+                        current_hwnd = currentHwnd()
+                    except:
+                        pass
+                    switchHwnd(int(sb.game_pid))
+                    sleep(2)
+                    pag.click(x, y)
+                    sleep(2)
+                    try:
+                        switchHwnd(int(current_hwnd))
+                    except:
+                        pass
+                    print(result)
+                    sleep(1)
+                    break
+                
+                else:
+                    ui.update(t,"未识别到内容，正在尝试下一次识别")
+                    sleep(2)
+            elif sb.game_kind==2:
+                '''
+                _ann_flag=1
+                im_PIL, left, width, top, height = getAppScreenshot(sb.game_pid)
+                ann=sb.locateAuto(sb.list_ann_level[sb.game_ann_kind-1],im_PIL,width,height)
+                if ann == False and _ann_flag==0:
+                    ui.update(t,f"已找到{GAMEKINDS(sb.game_ann_kind+3).name},即将进行下一步操作")
+                    _ann_flag=1
+                    sleep(2)
+                    msvcrt.getch()
+                elif ann == True and _ann_flag==0:
+                    ui.update(t,f"未找到{GAMEKINDS(sb.game_ann_kind+3).name},请重试")
                     sleep(2)
                     continue
-                ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
-                current_hwnd = currentHwnd()
-                switchHwnd(sb.game_pid)
-                sleep(1)
-                pag.click(x, y)
-                try:
-                    switchHwnd(current_hwnd)
-                except:
-                    pass
-                print(result)
-                
                 '''
-                else:
+
+                im_PIL, left, width, top, height = getAppScreenshot(sb.game_pid)
+                result=sb.locateAnn(im_PIL,width,height)
+                if result =='ready':
+                    x = left + width * 0.9069
+                    y = top + height * 0.86
                     os.system("cls")
-                    ui.update(1, '请打开到右下角蓝色"开始行动"按钮，会自动识别。')
-                sleep(2)
-                '''
+                    if sb.locateAuto(sb.img_byte_auto_off,im_PIL,width,height) == False:
+                        ui.update(t,"您未开启代理诶，自己勾一下吧")
+                        sleep(2)
+                        continue
+                    ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
+                    current_hwnd = currentHwnd()
+                    switchHwnd(int(sb.game_pid))
+                    sleep(1)
+                    pag.click(x, y)
+                    try:
+                        switchHwnd(int(current_hwnd))
+                    except:
+                        pass
+                    print(result)
+                    
+                    '''
+                    else:
+                        os.system("cls")
+                        ui.update(1, '请打开到右下角蓝色"开始行动"按钮，会自动识别。')
+                    sleep(2)
+                    '''
 
-            elif result=='start':
-                x = left + width * 0.8701
-                y = top + height * 0.7516
-                ui.update(t, "已找到红色开始行动按钮，即将进行下一步")
-                current_hwnd = currentHwnd()
-                switchHwnd(sb.game_pid)
-                sleep(2)
-                pag.click(x, y)
-                try:
-                    switchHwnd(current_hwnd)
-                except:
-                    pass
-                print(result)
-                sleep(1)
+                elif result=='start':
+                    x = left + width * 0.8701
+                    y = top + height * 0.7316
+                    ui.update(t, "已找到红色开始行动按钮，即将进行下一步")
+                    current_hwnd = currentHwnd()
+                    switchHwnd(int(sb.game_pid))
+                    sleep(1)
+                    pag.click(x, y)
+                    sleep(2)
+                    try:
+                        switchHwnd(int(current_hwnd))
+                    except:
+                        pass
+                    print(result)
+                    
                 
-            
-            elif result == 'playing':
-                ui.update(t, "正在进行代理...")
-                sleep(2)
-            
-            elif result == 'success':
-                ui.update(t,"本关已完成，即将进行下一次.")
-                x = left + width * 0.6657
-                y = top + height * 0.5057
-                current_hwnd = currentHwnd()
-                switchHwnd(sb.game_pid)
-                sleep(2)
-                pag.click(x, y)
-                try:
-                    switchHwnd(current_hwnd)
-                except:
-                    pass
-                print(result)
-                sleep(1)
-            
-            else:
-                ui.update(t,"未识别到内容，正在尝试下一次识别")
-                sleep(2)
-            
-            
-
-
-"""
-
- 
-    print(r"\
-        ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟\
-        ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣\
-        ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾\
-        ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿\
-        ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿\
-        ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿\
-        ⢸⠇⡜⣿⡟⠄⠄⠄⠈⠙⣿⣿⣿⣿⣿⣿⣿⣿⠟⣱⣻⣿⣿⣿⣿⣿⠟⠁⢳⠃⣿⣿⣿\
-        ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿")
-
-
-
+                elif result == 'playing':
+                    ui.update(t, "代理指挥作战正常运行中...")
+                    sleep(2)
+                
+                elif result == 'success':
+                    ui.update(t,"本关已完成，即将进行下一次.")
+                    x = left + width * 0.6657
+                    y = top + height * 0.5057
+                    current_hwnd = currentHwnd()
+                    switchHwnd(int(sb.game_pid))
+                    sleep(2)
+                    pag.click(x, y)
+                    sleep(1)
+                    pag.click(x,y)
+                    sleep(2)
+                    try:
+                        switchHwnd(int(current_hwnd))
+                    except:
+                        pass
+                    print(result)
+                    sleep(1)
+                    break
+                
+                else:
+                    ui.update(t,"未识别到内容，正在尝试下一次识别")
+                    sleep(2)
     
-    gamehwnd=init()
-    while(1):
-        os.system("cls")
-        tor,toc=readconfig()
-        print("\
-        ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟\n\
-        ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣\n\
-        ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾\n\
-        ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿\n\
-        ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿\n\
-        ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿\n\
-        ⢸⠇⡜⣿⡟⠄⠄⠄⠈⠙⣿⣿⣿⣿⣿⣿⣿⣿⠟⣱⣻⣿⣿⣿⣿⣿⠟⠁⢳⠃⣿⣿⣿\n\
-        ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿\n")
-
-        print(" \n\
-         _____________________________\n\
-        |                             |         Tips:\n\
-        |    明日方舟代刷脚本v0.04    |         欢迎使用明日方舟代刷脚本，\n\
-        |    twitter@bakashigure      |         操控鼠标点击需要管理员权限，\n\
-        |                             |         请确保使用管理员权限运行,\n\
-        |_____________________________|         建议分辨率1440*810. \n\n")
-
-        sleep(0.5)
-        print("功能:1.单纯挂机刷(不要动鼠标) 2.边刷边看视频(体验并不好) 3.关于 4.其他输入退出\n")
-        choice = eval(input("你的选择 :"))
-        if choice == 1:
-            
-            times = eval(input("输入代刷的次数 | "))
-            for i in range(times):
-                if i == 0:
-                    print("现在的时间", nowTime())
-                    sleep(1)
-                    print(r'"请将鼠标移至开始行动的"开"处，代刷将在6s后进行"')
-                    sleep(6)
-                    print("\n", "LINK START!  |", currentTime(), "\n")
-                    pag.click()
-                    gamex, gamey = pag.position()
-                    pag.moveTo(gamex, gamey-50, duration=0)
-                    sleep(toc)
-                    pag.click()
-                    print("正在代肝 ( 1 /", times, ")", "  |", currentTime())
-                    sleep(tor)
-                else:
-                    pag.moveTo(gamex+50, gamey-500, duration=0)
-                    pag.click()
-                    sleep(3)
-                    pag.click()
-                    sleep(toc)
-                    pag.moveTo(gamex, gamey, duration=0)
-                    pag.click()
-                    sleep(toc)
-                    pag.moveTo(gamex, gamey-50, duration=0)
-                    pag.click()
-                    print("正在代肝 (", i+1, "/", times,")   |", currentTime())
-                    sleep(tor)
-            print("摸完了!              |", currentTime(), "\n", "\n")
-            print("按任意键继续")
-            msvcrt.getch()
-
-        elif choice == 2:
-            times = eval(input("输入代刷的次数 | "))
-            for i in range(times):
-                if i == 0:
-                    print("现在的时间", nowTime())
-                    sleep(1)
-                    print("请将鼠标移至开始行动的开处，代肝将在5s后进行")
-                    sleep(5)
-                    gamex, gamey = pag.position()
-                    print("\n", "LINK START!  |", currentTime(), "\n")
-                    pag.click()
-                    sleep(toc)
-                    #print("游戏的句柄为",gamehwnd,"  |",currentTime())
-                    pag.moveTo(gamex, gamey-50, duration=0)
-                    sleep(toc)
-                    pag.click()
-                    #print ("START : %s" % time.ctime())
-                    print("现在可以切换至其他应用,会自动切回游戏模拟点击")
-                    print("正在代肝 ( 1 /", times, ")", "  |", currentTime())
-                    sleep(tor)
-                    nowhwnd = currentHwnd()
-                    nowx, nowy = pag.position()
-                    #print("现在的句柄为","  |",nowhwnd,)
-                    switchHwnd(gamehwnd)
-                else:
-                    print("正在代肝 (", i+1, "/", times,")   |", currentTime())
-                    pag.moveTo(gamex+50, gamey-500, duration=0)
-                    pag.click()
-                    sleep(toc)
-                    pag.click()
-                    sleep(toc)
-                    pag.moveTo(gamex, gamey, duration=0)
-                    pag.click()
-                    pag.moveTo(gamex, gamey-50, duration=0)
-                    sleep(toc)
-                    pag.click()
-                    switchHwnd(nowhwnd)
-                    pag.moveTo(nowx, nowy, duration=0)
-                    sleep(tor)
-                    nowhwnd = currentHwnd()
-                    nowx, nowy = pag.position()
-                    # print("现在的句柄为",nowhwnd)
-                    switchHwnd(gamehwnd)
-                    # if i==(times):
-                    #    break
-            print("摸完了!              |", currentTime(), "\n", "\n")
-            print("按任意键继续")
-            msvcrt.getch()
-        elif choice == 3:
-            os.system("cls")
-            print("\
-            ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟\n\
-            ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣\n\
-            ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾\n\
-            ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿\n\
-            ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿\n\
-            ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿\n\
-            ⢸⠇⡜⣿⡟⠄⠄⠄⠈⠙⣿⣿⣿⣿⣿⣿⣿⣿⠟⣱⣻⣿⣿⣿⣿⣿⠟⠁⢳⠃⣿⣿⣿\n\
-            ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿\n\
-            \n\n\
-            version: 0.04\n\
-            author twitter: @bakashigure\n\
-            telegram: t.me/bakashigure \n\
-            compile time: UTC/GMT+08:00 2020/4/30 15:45\n\
-            github: https://github.com/bakashigure/mrfz\n\
-            ")
-            print("Press any key to continue_(:з」∠)_ ")
-            msvcrt.getch()
-        else:
-            os._exit(1)
-    """
-
+    ui.update(t,"本次代理指挥作战已全部完成，感谢使用!")    
 
 if __name__ == "__main__":
     main()
