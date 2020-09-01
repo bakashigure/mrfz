@@ -1,14 +1,14 @@
-明日方舟自动刷图脚本 2.0 - [主页](https://github.con/bakashigure/mrfz)
+明日方舟自动刷图脚本 2.1 - [主页](https://github.con/bakashigure/mrfz)
 =========================
 
-**基于Python 3.8.5 64-bit**
+**基于Python 3.8.5 64-bit** 使用图像识别来判断当前游戏进度，实现自动循环刷图.
 
 Description
 =========================
-请在windows上运行模拟器，强烈建议设置模拟器窗口大小为`1440x810`
-！请以管理员权限运行，因为需要模拟鼠标点击，无论在编译器中还是exe，都需要管理员权限。！
+请在Windows上运行模拟器，建议设置模拟器窗口大小为`1440x810`
+请以管理员权限运行，因为需要模拟鼠标点击需要管理员权限.
 
-    欢迎使用明日方舟刷图脚本 Version2.0
+    欢迎使用明日方舟刷图脚本 Version2.1
     这里是一些程序说明，请仔细阅读后使用。
 
     0.本程序会先试图遍历进程寻找包含模拟器三字的进程，如果结果为0，则会让您自行指定进程，
@@ -29,17 +29,19 @@ Description
 
     附0: 开源项目地址 https://github.com/bakashigure/mrfz  (请不要用于商业化)
     附1: 我的官服id 孭纸#416  (孭读mie)
-    附2: contact::bakashigure@hotmail.com
+    附2: Contact::bakashigure@hotmail.com
 
 ChangeLog
 =========================
+**V2.1** 2020-9-1
+  - 全程后台刷图，无需切换窗口
 
 **V2.0** 2020-8-25
   - 使用图片识别来刷图
 
 **V0.04** 2019-9
-  - 使用绝对定位来刷图，失败率较高
+  - 使用绝对定位来刷图，失败率较高，老版本在old文件夹下
 
 Discussing
 =========================
-- [telegram](https://t.me/bakashigure)
+- [Telegram](https://t.me/bakashigure)
