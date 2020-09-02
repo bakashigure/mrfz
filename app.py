@@ -28,7 +28,7 @@ class LOG:
     def __init__(self):
         self.log=[]
     def logging(self,str):
-        if len(self.log)>=13:
+        if len(self.log)>=8:
             self.log.pop(0)
             self.log.append(str)
         else:
@@ -36,8 +36,8 @@ class LOG:
     def loggOutput(self):
         for items in self.log:
             print(items)
-    def update(self,str):
-        sb="["+str(currentTime())+"] ["+str+"]"
+    def update(self,strr):
+        sb="["+str(currentTime())+"] ["+strr+"]"
         return self.logging(sb)
 
 ll=LOG()
@@ -193,19 +193,6 @@ class IDIMG:
             msvcrt.getch()
             os._exit(1)
 
-    def locateMainline(self, screenshots, width, height):
-        for items, ide in self.list_mainline.items():
-            img = Image.open(BytesIO(items))
-            img = img.resize(
-                (int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
-                Image.ANTIALIAS,
-            )
-            if (res := pag.locate(img, screenshots, confidence=0.8)) != None:
-                print(img.size[0], img.size[1])
-                print(res)
-                return ide
-
-
     @debug(info="定位主线")
     def locateMainlineTest(self):
         screenshot, _left, width, _top=self.getAppScreenshot()
@@ -217,11 +204,14 @@ class IDIMG:
                 position=[]
                 position.append(pag.center(res)[0])
                 position.append(pag.center(res)[1])
+                '''
                 print(img.size[0], img.size[1])
                 print(res)
                 print("position",position[0],"  ",position[1])
+                '''
                 return value,position
         return None,None
+
 
 
     @debug(info="定位剿灭")
@@ -399,11 +389,12 @@ def isAdmin():
 
 def main():
     os.system("title 明日方舟代刷脚本V2.0 twitter@bakashigure")
+    os.system("mode con cols=110 lines=40")
     print(
-        """ ####预览版本 未正式发布####
-    
+        """\033[0;31;46m ####预览版本 未正式发布####
+
     欢迎使用明日方舟刷图脚本 Version2.0
-    这里是一些程序说明，请仔细阅读后使用。
+    这里是一些程序说明，请仔细阅读后使用.\033[0m
 
     0.本程序会先试图遍历进程寻找包含模拟器三字的进程，如果结果为0，则会让您自行指定进程，
        如果结果为1，则会向您确认是否为游戏进程，如果结果大于1，则会让您手动指定进程.
@@ -504,7 +495,6 @@ def main():
                     sleep(2)
                     break
 
-
             elif sb.game_kind == 2:
                 """
                 _ann_flag=1
@@ -520,7 +510,6 @@ def main():
                     sleep(2)
                     continue
                 """
-
 
                 result,position = sb.locateAnn()
                 if result == "ready":
@@ -554,7 +543,7 @@ def main():
                     sleep(2)
 
     ui.update(t, "本次代理指挥作战已全部完成，感谢使用!")
-@debug("尝试点击")
+@debug("尝试点击坐标")
 def pclick(hwnd,position):
     hwnd=int(hwnd)
     p=win32api.MAKELONG(position[0],position[1])
