@@ -1,11 +1,17 @@
 明日方舟自动刷图脚本 2.1 - [主页](https://github.con/bakashigure/mrfz)
 =========================
 
-**基于Python 3.8.5 64-bit** 使用图像识别来判断当前游戏进度，实现自动循环刷图.
+基于**Python**,使用图像识别判断当前游戏内容，实现后台自动循环刷图. 
+
+Preview
+=========================
+![](https://raw.githubusercontent.com/bakashigure/mrfz/master/img/sample.png)
+
 
 Description
 =========================
-请在Windows上运行模拟器，建议设置模拟器窗口大小为`1440x810`
+请在Windows上运行模拟器, 建议设置模拟器窗口大小为`1440x810`  
+推荐模拟器为`mumu模拟器`, 您也可以使用手机投屏,这需要手机分辨率16:9  
 请以管理员权限运行，因为需要模拟鼠标点击需要管理员权限.
 
     欢迎使用明日方舟刷图脚本 Version2.1
@@ -30,6 +36,16 @@ Description
     附0: 开源项目地址 https://github.com/bakashigure/mrfz  (请不要用于商业化)
     附1: 我的官服id 孭纸#416  (孭读mie)
     附2: Contact::bakashigure@hotmail.com
+
+Installation
+=========================
+ * 下载源码手动运行(请使用管理员权限)
+    * 自行push  
+      `pip install -r requirements.txt`  
+      `python app.py`
+ * pyinstaller打包版(推荐)
+    * 点击下载
+
 
 ChangeLog
 =========================
