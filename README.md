@@ -5,13 +5,13 @@
 
 Preview
 =========================
-![](https://raw.githubusercontent.com/bakashigure/mrfz/master/img/sample.png)
+![截图](https://raw.githubusercontent.com/bakashigure/mrfz/master/img/sample.png)
 
 
 Description
 =========================
 请在Windows上运行模拟器, 建议设置模拟器窗口大小为`1440x810`  
-推荐模拟器为`mumu模拟器`, 您也可以使用手机投屏,这需要手机分辨率16:9  
+推荐模拟器为`mumu模拟器`, 您也可以使用手机投屏,这需要手机分辨率16:9,以及清晰的游戏画面   
 请以管理员权限运行，因为需要模拟鼠标点击需要管理员权限.
 
     欢迎使用明日方舟刷图脚本 Version2.1
@@ -44,7 +44,7 @@ Installation
       `pip install -r requirements.txt`  
       `python app.py`
  * pyinstaller打包版(推荐)
-    * 点击下载
+    * [点击下载](https://github.com/bakashigure/mrfz/releases)
 
 
 ChangeLog
@@ -56,7 +56,7 @@ ChangeLog
   - 使用图片识别来刷图
 
 **V0.04** 2019-9
-  - 使用绝对定位来刷图，失败率较高，老版本在old文件夹下
+  - 使用定位来刷图，失败率较高，老版本在old文件夹下
 
 Discussing
 =========================
