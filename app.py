@@ -12,6 +12,7 @@ import msvcrt
 import os
 import re
 import sys
+import threading
 import time
 from enum import Enum
 from io import BytesIO, TextIOWrapper
@@ -31,18 +32,13 @@ class LOG:
     def __init__(self):
         self.log=[]
     def logging(self,str):
-        if len(self.log)>=8:
+        while len(self.log)>=8:
             self.log.pop(0)
-            self.log.append(str)
-        else:
-            self.log.append(str)
-    def loggOutput(self):
-        for items in self.log:
-            print(items)
+        self.log.append(str)
     def update(self,strr):
         sb="["+str(currentTime())+"] ["+strr+"]"
         return self.logging(sb)
-
+global ll
 ll=LOG()
 
 def debug(info):
@@ -110,17 +106,9 @@ class IDIMG:
         self.img_ann_success = BytesIO(self.img_byte_ann_success)
         # self.imng_ann_success=Image.open(BytesIO(self.img_byte_ann_success))
 
-        self.list_mainline = {
-            self.img_byte_ready: "ready",
-            self.img_byte_start: "start",
-            self.img_byte_playing: "playing",
-            self.img_byte_success: "success",
-            self.img_byte_fail: "fail",
-        }
-
         self.list_mainlinetest={
             self.img_ready:"ready",
-            self.img_start:"ready",
+            self.img_start:"start",
             self.img_playing:"playing",
             self.img_success:"success",
             self.img_fail:"fail",
@@ -162,7 +150,7 @@ class IDIMG:
                 if t != "":
                     print(" |", "%-10s" % h, "%.50s" % t)
             print("\n未找到包含'模拟器'字样的游戏进程,请手动指定进程hwnd")
-            print("例子: 如您看到[   | 114514 MuMu模拟器   ]，请输入114514")
+            print("例子: 如您看到[   | 114514   MuMu模拟器   ]，请输入114514")
             self.game_hwnd = eval(input("\033[0;30;47m请打开模拟器后重试,或手动输入hwnd(进程名前的数字):\033[0m"))
             self.game_title = self.hwnd_title[self.game_hwnd]
 
@@ -180,35 +168,22 @@ class IDIMG:
                 self.game_title = self.hwnd_title[self.game_hwnd]
                 
         elif n > 1:
-            print("\033[0;30;47m找到了多个包含模拟字样的进程，您可能想多开? 请手动指定进程hwnd(进程名前的数字)\033[0m")
+            
             for h, t in self.hwnd_title.items():
                 if t != "":
                     print(" |", "%-10s" % h, "%.50s" % t)
+            print("\n找到了多个包含模拟字样的进程，您可能想多开? 请手动指定进程hwnd(进程名前的数字)")           
             self.game_hwnd = eval(input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
             self.game_title= self.hwnd_title[self.game_hwnd]
             
     @debug(info="获取游戏截图")
     def getAppScreenshot(self):
         try:
-            pid = int(self.game_hwnd)
-            left, top, right, bot = win32gui.GetWindowRect(pid)
+            hwnd = int(self.game_hwnd)
+            left, top, right, bot = win32gui.GetWindowRect(hwnd)
             width = right - left
             height = bot - top
-            '''
-            print(
-                "__log__: ",
-                "left: ",
-                left,
-                "  top: ",
-                top,
-                "  right: ",
-                right,
-                "  bottom: ",
-                bot,
-            )
-            print("__log__: ", "width: ", width, "  height: ", height)
-            '''
-            hWndDC = win32gui.GetWindowDC(pid)
+            hWndDC = win32gui.GetWindowDC(hwnd)
             mfcDC = win32ui.CreateDCFromHandle(hWndDC)
             saveDC = mfcDC.CreateCompatibleDC()
             saveBitMap = win32ui.CreateBitmap()
@@ -228,14 +203,28 @@ class IDIMG:
             )
             return im_PIL, left, width, top
         except:
-            print("出现错误.")
+            print("尝试截图出现错误")
             msvcrt.getch()
             os._exit(1)
 
-    @debug(info="定位主线")
-    def locateMainlineTest(self):
+    @debug(info="定位主线场景")
+    def locateMainline(self):
         screenshot, _left, width, _top=self.getAppScreenshot()
         for items,value in self.list_mainlinetest.items():
+            img=Image.open(items)
+            img=img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
+                Image.ANTIALIAS,)
+            if(res:=pag.locate(img,screenshot,confidence=0.95))!=None:
+                position=[]
+                position.append(pag.center(res)[0])
+                position.append(pag.center(res)[1])
+                return value,position
+        return None,None
+
+    @debug(info="定位剿灭场景")
+    def locateAnn(self):
+        screenshot, _left, width, _top=self.getAppScreenshot()
+        for items,value in self.list_ann.items():
             img=Image.open(items)
             img=img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
                 Image.ANTIALIAS,)
@@ -243,31 +232,10 @@ class IDIMG:
                 position=[]
                 position.append(pag.center(res)[0])
                 position.append(pag.center(res)[1])
-                '''
-                print(img.size[0], img.size[1])
-                print(res)
-                print("position",position[0],"  ",position[1])
-                '''
                 return value,position
         return None,None
 
-    @debug(info="定位剿灭")
-    def locateAnn(self):
-        screenshot, left, width, top=self.getAppScreenshot()
-        for items,value in self.list_ann.items():
-            img=Image.open(items)
-            img=img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
-                Image.ANTIALIAS,)
-            if(res:=pag.locate(img,screenshot,confidence=0.8))!=None:
-                position=[]
-                position.append(pag.center(res)[0]-left)
-                position.append(pag.center(res)[1]-top)
-                #print(img.size[0], img.size[1])
-                #print(res)
-                return value,position
-        return None,None
-
-    @debug(info="定位是否代理指挥")
+    @debug(info="定位是否开启代理")
     def locateAuto(self):
         _screenshot, _left, _width, _top=self.getAppScreenshot()
         img = Image.open(self.img_auto_off)
@@ -296,9 +264,11 @@ class UI:
         self.title = title
         self.kind = kind
         self.times = times
-    @debug(info="更新ui")
+
+    @debug(info="更新状态")
     def update(self, current_cnt, msg):
         os.system("cls")
+        sys.stdout.flush()
         print( f"""
     ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
     ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
@@ -312,10 +282,11 @@ class UI:
 
     正在监视进程: {self.hwnd}  {self.title} |  当前时间 {currentTime()}
     关卡种类: {self.kind} , 正在进行第{current_cnt+1}次，共{self.times}次
-    状态:\033[0;30;47m{msg}\033[0m
+    状态:\033[0;30;47m {msg} \033[0m
 
     """
         )
+
         for items in ll.log:
             print(items)
 
@@ -326,20 +297,32 @@ class UI:
 def sleep(sec):
     time.sleep(sec)
 
+# 当前时间
 def currentTime():
     return time.strftime("%H:%M:%S", time.localtime(time.time()))
 
+# 是否以管理员权限运行
 def isAdmin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
 
+@debug("点击坐标")
+def pclick(hwnd,position):
+    hwnd=int(hwnd)
+    p=win32api.MAKELONG(position[0],position[1])
+    win32gui.SendMessage(hwnd,win32con.WM_ACTIVATE,win32con.WA_ACTIVE,0)
+    win32api.SendMessage(hwnd,win32con.WM_LBUTTONDOWN,win32con.MK_LBUTTON,p)
+    sleep(0.05)
+    win32api.SendMessage(hwnd,win32con.WM_LBUTTONUP,win32con.MK_LBUTTON,p)
+    sleep(0.05)
+
+
 # 获取当前窗口句柄
 @debug("获取当前窗口句柄")
 def currentHwnd():
     return win32gui.GetForegroundWindow()
-
 
 # 切换进程并置顶
 @debug("切换进程并置顶")
@@ -354,7 +337,6 @@ def switchHwnd(hwnd):
     except:
         pass
     try:
-        win32api.keybd_event(13, 0, 0, 0)  # 发送一次回车事件，不然无法置顶游戏窗口 这也算是神秘bug之一吧
         win32gui.SetForegroundWindow(hwnd)
     except:
         pass
@@ -425,13 +407,13 @@ def main():
     for t in range(sb.game_times):
         while 1:
             if sb.game_kind == 1:
-                result,position = sb.locateMainlineTest()
+                result,position = sb.locateMainline()
+
                 if result==None:
                     ui.update(t, "未识别到内容，正在尝试下一次识别")
                     sleep(2)
 
                 elif result == "ready":
-                    os.system("cls")
                     if (
                         sb.locateAuto()== False
                     ):
@@ -439,23 +421,16 @@ def main():
                         ll.update("定位代理")
                         sleep(2)
                         continue
-                    ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
+                    ui.update(t, "已找到蓝色开始行动按钮,即将进行下一步")
                     ll.update("定位蓝色开始行动")
-                    sleep(2)
                     pclick(sb.game_hwnd,position)
-                    """
-                    else:
-                        os.system("cls")
-                        ui.update(1, '请打开到右下角蓝色"开始行动"按钮，会自动识别。')
                     sleep(2)
-                    """
 
                 elif result == "start":
-                    ui.update(t, "已找到红色开始行动按钮，即将进行下一步")
+                    ui.update(t, "已找到红色开始行动按钮,即将进行下一步")
                     ll.update("定位红色开始行动")
-                    sleep(2)
                     pclick(sb.game_hwnd,position)
-                    print(result)
+                    sleep(2)
 
                 elif result == "playing":
                     ui.update(t, "代理指挥作战正常运行中...")
@@ -468,53 +443,44 @@ def main():
                     pclick(sb.game_hwnd,position)
                     sleep(4)
                     break
-
+            
             elif sb.game_kind == 2:
-                """
-                _ann_flag=1
-                im_PIL, left, width, top, height = getAppScreenshot(sb.game_hwnd)
-                ann=sb.locateAuto(sb.list_ann_level[sb.game_ann_kind-1],im_PIL,width,height)
-                if ann == False and _ann_flag==0:
-                    ui.update(t,f"已找到{GAMEKINDS(sb.game_ann_kind+3).name},即将进行下一步操作")
-                    _ann_flag=1
-                    sleep(2)
-                    msvcrt.getch()
-                elif ann == True and _ann_flag==0:
-                    ui.update(t,f"未找到{GAMEKINDS(sb.game_ann_kind+3).name},请重试")
-                    sleep(2)
-                    continue
-                """
-
                 result,position = sb.locateAnn()
-                if result == "ready":
-                    os.system("cls")
+                if result==None:
+                    ui.update(t, "未识别到内容，正在尝试下一次识别")
+                    sleep(2)
+
+                elif result == "ready":
                     if (
                         sb.locateAuto()== False
                     ):
                         ui.update(t, "您未开启代理诶，自己勾一下吧")
+                        ll.update("定位代理")
                         sleep(2)
                         continue
                     ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
-                    sleep(1)
+                    ll.update("定位蓝色开始行动")
                     pclick(sb.game_hwnd,position)
+                    sleep(2)
 
                 elif result == "start":
+                    ui.update(t, "已找到红色开始行动，即将进行下一步")
+                    ll.update("定位红色开始行动")
                     pclick(sb.game_hwnd,position)
-                    print(result)
+                    sleep(2)
 
                 elif result == "playing":
                     ui.update(t, "代理指挥作战正常运行中...")
+                    ll.update("代理指挥正常运行")
                     sleep(2)
 
                 elif result == "success":
                     ui.update(t, "本关已完成，即将进行下一次.")
                     pclick(sb.game_hwnd,position)
                     sleep(4)
+                    pclick(sb.game_hwnd,position)
+                    sleep(4)
                     break
-
-                else:
-                    ui.update(t, "未识别到内容，正在尝试下一次识别")
-                    sleep(2)
 
     ui.update(t, "本次代理指挥作战已全部完成，感谢使用!")
     try:
@@ -523,15 +489,6 @@ def main():
         pass
     msvcrt.getch()
 
-@debug("尝试点击坐标")
-def pclick(hwnd,position):
-    hwnd=int(hwnd)
-    p=win32api.MAKELONG(position[0],position[1])
-    win32gui.SendMessage(hwnd,win32con.WM_ACTIVATE,win32con.WA_ACTIVE,0)
-    win32api.SendMessage(hwnd,win32con.WM_LBUTTONDOWN,win32con.MK_LBUTTON,p)
-    sleep(0.05)
-    win32api.SendMessage(hwnd,win32con.WM_LBUTTONUP,win32con.MK_LBUTTON,p)
-    sleep(0.05)
 
 if __name__ == "__main__":
     main()
