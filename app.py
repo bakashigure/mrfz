@@ -27,7 +27,6 @@ from PIL import Image
 from imgbb import imgbase64c
 
 
-
 class LOG:
     def __init__(self):
         self.log=[]
@@ -38,6 +37,7 @@ class LOG:
     def update(self,strr):
         sb="["+str(currentTime())+"] ["+strr+"]"
         return self.logging(sb)
+
 global ll
 ll=LOG()
 
@@ -264,15 +264,14 @@ class UI:
         self.title = title
         self.kind = kind
         self.times = times
+        self.log=''
 
     @debug(info="更新状态")
     def update(self, current_cnt, msg):
-        os.system("cls")
-        sys.stdout.flush()
-        print( f"""
+        self.log=f"""
     ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
     ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
-    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.1 build0901.2355
+    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.1 build0912.1528
     ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿      https://github.com/bakashigure/mrfz
     ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿      
     ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿      游戏窗口可以不置顶,但请不要最小化.
@@ -284,13 +283,16 @@ class UI:
     关卡种类: {self.kind} , 正在进行第{current_cnt+1}次，共{self.times}次
     状态:\033[0;30;47m {msg} \033[0m
 
+
     """
-        )
+    def output(self):
+        while(1):
+            os.system("cls")
+            print(self.log)
+            for items in ll.log:
+                print(items)
+            sleep(1)
 
-        for items in ll.log:
-            print(items)
-
-        sys.stdout.flush()
 
 # 摸鱼time
 @debug("摸鱼")
@@ -404,6 +406,8 @@ def main():
         )
         ui = UI(sb.game_hwnd, sb.game_title, _gamekinds, sb.game_times)
 
+    thread_log=threading.Thread(target=ui.output)
+    thread_log.start()
     for t in range(sb.game_times):
         while 1:
             if sb.game_kind == 1:
