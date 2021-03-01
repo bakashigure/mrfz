@@ -2,7 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+222.py
+for_test.py
+mrfz.7z
+get_sub_handle.py
 # C extensions
 *.so
 

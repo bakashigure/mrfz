@@ -5,7 +5,8 @@
 # @Site : https://github.com/bakashigure/mrfz
 # @Software: 明日方舟代肝脚本
 
-
+import datetime
+import gc
 import base64
 import ctypes
 import msvcrt
@@ -41,6 +42,7 @@ class LOG:
 global ll
 ll=LOG()
 
+
 def debug(info):
     def wrapper(func):
         def inner_wrapper(*args,**kwargs):
@@ -55,12 +57,19 @@ def debug(info):
 
 
 class IDIMG:
+    '''
+    初始化类，用于识别的截图以base64的方式存在imgbb.py中，
+    b64解码后再使用BytesIO转换成python的bytes.
+    但是bytes经过Image.open()调用后就变成了不可哈希的对象，
+    无法存放在dict里面，导致每次截图之后的识别都要重新调用Image.open打开图片，
+    这就造成了大量的性能损耗.
+    '''
     def __init__(self):
-        self.game_times = 0
-        self.game_hwnd = 0
-        self.game_kind = 1
-        self.game_ann_kind = 1
-        self.game_title = ""
+        self.game_times = 0 # 游戏回合数
+        self.game_hwnd = 0 # 游戏hwnd
+        self.game_kind = 1 # 游戏类型，1==主线及材料， 
+        self.game_ann_kind = 1 #剿灭种类 
+        self.game_title = "" # 模拟器标题
 
         self.img_byte_success = base64.b64decode(imgbase64c.mission_success)
         self.img_success = BytesIO(self.img_byte_success)
@@ -106,13 +115,20 @@ class IDIMG:
         self.img_ann_success = BytesIO(self.img_byte_ann_success)
         # self.imng_ann_success=Image.open(BytesIO(self.img_byte_ann_success))
 
-        self.list_mainlinetest={
+        '''
+        识别对象采用dict，key为关键词，value为图片的bytes
+        list_mainline == 主线及材料关的识别
+        list_ann_level == 剿灭的关卡种类，这个并不起作用
+        list_ann == 剿灭关的识别
+        '''
+        self.list_mainline={
             self.img_ready:"ready",
             self.img_start:"start",
             self.img_playing:"playing",
             self.img_success:"success",
             self.img_fail:"fail",
         }
+         
 
         self.list_ann_level = [
             self.img_byte_ann_chernob,
@@ -126,7 +142,10 @@ class IDIMG:
             self.img_playing: "playing",
             self.img_ann_success: "success",
         }
-    
+
+        '''
+        hwnd_title为字典，存放当前系统所有的hwnd和其标题。
+        '''
         self.hwnd_title = dict()
         def getAllHwnd(hwnd,mouse):
             if (
@@ -137,6 +156,10 @@ class IDIMG:
                 self.hwnd_title.update({hwnd: win32gui.GetWindowText(hwnd)})
         win32gui.EnumWindows(getAllHwnd, 0)
 
+        '''
+        正则匹配游戏标题是否包含关键词 "模拟器"，
+        并将结果存放在game_lists中
+        '''
         self.game_lists = []
         for h, t in self.hwnd_title.items():
             if t != "":
@@ -165,7 +188,10 @@ class IDIMG:
                     if t != "":
                         print(" |", "%-10s" % h, "%.50s" % t)
                 self.game_hwnd = eval(input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
-                self.game_title = self.hwnd_title[self.game_hwnd]
+                #self.game_title = self.hwnd_title[self.game_hwnd]
+                self.game_title=''
+            self.subHandle = win32gui.FindWindowEx(int(self.game_hwnd), 0, None, None)
+            self.game_hwnd=self.subHandle
                 
         elif n > 1:
             
@@ -201,16 +227,18 @@ class IDIMG:
                 0,
                 1,
             )
+            del hWndDC,mfcDC,saveDC,saveBitMap,bmpinfo,bmpstr
+            gc.collect()
             return im_PIL, left, width, top
         except:
-            print("尝试截图出现错误")
+            print("ERROR: 尝试截图出现错误,按任意键退出")
             msvcrt.getch()
             os._exit(1)
 
     @debug(info="定位主线场景")
     def locateMainline(self):
         screenshot, _left, width, _top=self.getAppScreenshot()
-        for items,value in self.list_mainlinetest.items():
+        for items,value in self.list_mainline.items():
             img=Image.open(items)
             img=img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
                 Image.ANTIALIAS,)
@@ -218,6 +246,7 @@ class IDIMG:
                 position=[]
                 position.append(pag.center(res)[0])
                 position.append(pag.center(res)[1])
+                del img
                 return value,position
         return None,None
 
@@ -232,6 +261,7 @@ class IDIMG:
                 position=[]
                 position.append(pag.center(res)[0])
                 position.append(pag.center(res)[1])
+                del img
                 return value,position
         return None,None
 
@@ -265,9 +295,13 @@ class UI:
         self.kind = kind
         self.times = times
         self.log=''
+        self.finish='将在完成一次后得出'
 
     @debug(info="更新状态")
     def update(self, current_cnt, msg):
+        '''
+       
+        '''
         self.log=f"""
     ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
     ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
@@ -279,7 +313,7 @@ class UI:
     ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿"
 
 
-    正在监视进程: {self.hwnd}  {self.title} |  当前时间 {currentTime()}
+    正在监视进程: {self.hwnd}  {self.title} |  当前时间 {currentTime()} | 预计剩余时间  {self.finish}
     关卡种类: {self.kind} , 正在进行第{current_cnt+1}次，共{self.times}次
     状态:\033[0;30;47m {msg} \033[0m
 
@@ -292,7 +326,7 @@ class UI:
             for items in ll.log:
                 print(items)
             sleep(1)
-
+        
 
 # 摸鱼time
 @debug("摸鱼")
@@ -345,6 +379,7 @@ def switchHwnd(hwnd):
 
 
 def main():
+
     os.system("title 明日方舟代刷脚本V2.0 twitter@bakashigure")
     os.system("mode con cols=110 lines=40")
     print(
@@ -396,6 +431,7 @@ def main():
     sb.game_times = eval(input("\033[0;30;47m请输入代刷的次数(当前体力/每关耗体): \033[0m"))
     print("请将游戏打开至'右下角蓝色开始行动',会自动识别.")
     sleep(3)
+
     if sb.game_kind == 1:
         ui = UI(sb.game_hwnd, sb.game_title, GAMEKINDS(sb.game_kind).name, sb.game_times)
     else:
@@ -405,14 +441,20 @@ def main():
             + str(GAMEKINDS(sb.game_ann_kind + 3).name)
         )
         ui = UI(sb.game_hwnd, sb.game_title, _gamekinds, sb.game_times)
+    
+    global start_time
+    global end_time
+    time_flag=0
 
     thread_log=threading.Thread(target=ui.output)
     thread_log.start()
+
+
     for t in range(sb.game_times):
         while 1:
             if sb.game_kind == 1:
                 result,position = sb.locateMainline()
-
+            
                 if result==None:
                     ui.update(t, "未识别到内容，正在尝试下一次识别")
                     sleep(2)
@@ -425,6 +467,7 @@ def main():
                         ll.update("定位代理")
                         sleep(2)
                         continue
+                    start_time=datetime.datetime.now()
                     ui.update(t, "已找到蓝色开始行动按钮,即将进行下一步")
                     ll.update("定位蓝色开始行动")
                     pclick(sb.game_hwnd,position)
@@ -446,6 +489,13 @@ def main():
                     ll.update("本关已完成")
                     pclick(sb.game_hwnd,position)
                     sleep(4)
+                    if time_flag==0:
+                        end_time=datetime.datetime.now()
+                        _s=(end_time-start_time).seconds*sb.game_times
+                        _mi,_se=divmod(_s,60)
+                        _hr,_mi=divmod(_mi,60)
+                        ui.finish="%02d小时%02d分%02d秒"
+                        time_flag=1
                     break
             
             elif sb.game_kind == 2:
