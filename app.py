@@ -6,10 +6,8 @@
 # @Software: 明日方舟代肝脚本
 
 import datetime
-import gc
 import base64
 import ctypes
-import msvcrt
 import os
 import re
 import sys
@@ -25,93 +23,65 @@ import win32gui
 import win32ui
 from PIL import Image
 
-from imgbb import imgbase64c
-
-
-class LOG:
-    def __init__(self):
-        self.log=[]
-    def logging(self,str):
-        while len(self.log)>=8:
-            self.log.pop(0)
-        self.log.append(str)
-    def update(self,strr):
-        sb="["+str(currentTime())+"] ["+strr+"]"
-        return self.logging(sb)
-
-global ll
-ll=LOG()
-
-
-def debug(info):
-    def wrapper(func):
-        def inner_wrapper(*args,**kwargs):
-            sb='[{time}] [{info}] enter function {func}()'.format(
-                time=currentTime(),
-                info=info,
-                func=func.__name__)
-            ll.logging(sb)
-            return func(*args,**kwargs)
-        return inner_wrapper
-    return wrapper
+from src.images import image_base64
+from src.utils import HwndNotFoundException,ScreenshotException
+from src.ui import Ui
+from src.log import log
 
 
 class IDIMG:
     '''
-    初始化类，用于识别的截图以base64的方式存在imgbb.py中，
+    初始化类，用于识别的截图以base64的方式存在imgae.py中，
     b64解码后再使用BytesIO转换成python的bytes.
-    但是bytes经过Image.open()调用后就变成了不可哈希的对象，
-    无法存放在dict里面，导致每次截图之后的识别都要重新调用Image.open打开图片，
-    这就造成了大量的性能损耗.
     '''
     def __init__(self):
         self.game_times = 0 # 游戏回合数
-        self.game_hwnd = 0 # 游戏hwnd
-        self.game_kind = 1 # 游戏类型，1==主线及材料， 
+        self.game_hwnd = 0 # 游戏窗口句柄hwnd
+        self.game_kind = 1 # 游戏类型 | 1:主线及材料 | 2:剿灭 
         self.game_ann_kind = 1 #剿灭种类 
         self.game_title = "" # 模拟器标题
 
-        self.img_byte_success = base64.b64decode(imgbase64c.mission_success)
+        self.img_byte_success = base64.b64decode(image_base64.mission_success)
         self.img_success = BytesIO(self.img_byte_success)
         # self.img_success = Image.open(BytesIO(self.img_byte_success))
 
-        self.img_byte_fail = base64.b64decode(imgbase64c.mission_fail)
+        self.img_byte_fail = base64.b64decode(image_base64.mission_fail)
         self.img_fail = BytesIO(self.img_byte_fail)
         # self.img_fail = Image.open(BytesIO(self.img_byte_fail))
 
-        self.img_byte_ready = base64.b64decode(imgbase64c.mission_ready)
+        self.img_byte_ready = base64.b64decode(image_base64.mission_ready)
         self.img_ready = BytesIO(self.img_byte_ready)
         # self.img_ready = Image.open(BytesIO(self.img_byte_ready))
 
-        self.img_byte_start = base64.b64decode(imgbase64c.mission_start)
+        self.img_byte_start = base64.b64decode(image_base64.mission_start)
         self.img_start = BytesIO(self.img_byte_start)
         # self.img_start = Image.open(BytesIO(self.img_byte_start))
 
-        self.img_byte_auto_on = base64.b64decode(imgbase64c.mission_auto_on)
+        self.img_byte_auto_on = base64.b64decode(image_base64.mission_auto_on)
         self.img_auto_on = BytesIO(self.img_byte_auto_on)
         # self.img_on = Image.open(BytesIO(self.img_byte_auto_on))
 
-        self.img_byte_auto_off = base64.b64decode(imgbase64c.mission_auto_off)
+        self.img_byte_auto_off = base64.b64decode(image_base64.mission_auto_off)
         self.img_auto_off = BytesIO(self.img_byte_auto_off)
         # self.img_off = Image.open(BytesIO(self.img_byte_auto_off))
 
-        self.img_byte_playing = base64.b64decode(imgbase64c.mission_playing)
+        self.img_byte_playing = base64.b64decode(image_base64.mission_playing)
         self.img_playing = BytesIO(self.img_byte_playing)
         # self.img_playing = Image.open(BytesIO(self.img_byte_playing))
 
-        self.img_byte_ann_chernob = base64.b64decode(imgbase64c.ann_chernob)
+        self.img_byte_ann_chernob = base64.b64decode(image_base64.ann_chernob)
         self.img_ann_chernob = BytesIO(self.img_byte_ann_chernob)
         # self.img_ann_chernob=Image.open(BytesIO(self.img_byte_ann_chernob))
 
-        self.img_byte_ann_downtown = base64.b64decode(imgbase64c.ann_downtown)
+        self.img_byte_ann_downtown = base64.b64decode(image_base64.ann_downtown)
         self.img_ann_downtown = BytesIO(self.img_byte_ann_downtown)
         # self.img_ann_downtown=Image.open(BytesIO(self.img_byte_ann_downtown))
 
-        self.img_byte_ann_outskirts = base64.b64decode(imgbase64c.ann_outskirts)
+        self.img_byte_ann_outskirts = base64.b64decode(image_base64.ann_outskirts)
         self.img_ann_outskirts = BytesIO(self.img_byte_ann_outskirts)
         # self.img_ann_outskirts=Image.open(BytesIO(self.img_byte_ann_outskirts))
 
-        self.img_byte_ann_success = base64.b64decode(imgbase64c.ann_success)
+        self.img_byte_ann_success = base64.b64decode(image_base64.ann_success)
         self.img_ann_success = BytesIO(self.img_byte_ann_success)
         # self.imng_ann_success=Image.open(BytesIO(self.img_byte_ann_success))
 
@@ -129,13 +99,13 @@ class IDIMG:
             self.img_fail:"fail",
         }
          
-
+        '''
         self.list_ann_level = [
             self.img_byte_ann_chernob,
             self.img_byte_ann_downtown,
             self.img_byte_ann_outskirts,
         ]
-
+        '''
         self.list_ann = {
             self.img_ready: "ready",
             self.img_start: "start",
@@ -190,8 +160,7 @@ class IDIMG:
                 self.game_hwnd = eval(input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
                 #self.game_title = self.hwnd_title[self.game_hwnd]
                 self.game_title=''
-            self.subHandle = win32gui.FindWindowEx(int(self.game_hwnd), 0, None, None)
-            self.game_hwnd=self.subHandle
+
                 
         elif n > 1:
             
@@ -201,8 +170,9 @@ class IDIMG:
             print("\n找到了多个包含模拟字样的进程，您可能想多开? 请手动指定进程hwnd(进程名前的数字)")           
             self.game_hwnd = eval(input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
             self.game_title= self.hwnd_title[self.game_hwnd]
-            
-    @debug(info="获取游戏截图")
+        self.subHandle = win32gui.FindWindowEx(int(self.game_hwnd), 0, None, None)
+        self.game_hwnd=self.subHandle
+    @log.wrap(info="获取游戏截图")
     def getAppScreenshot(self):
         try:
             hwnd = int(self.game_hwnd)
@@ -228,14 +198,11 @@ class IDIMG:
                 1,
             )
             del hWndDC,mfcDC,saveDC,saveBitMap,bmpinfo,bmpstr
-            gc.collect()
             return im_PIL, left, width, top
         except:
-            print("ERROR: 尝试截图出现错误,按任意键退出")
-            msvcrt.getch()
-            os._exit(1)
+            raise ScreenshotException('screenshot fail')
 
-    @debug(info="定位主线场景")
+    @log.wrap(info="定位主线场景")
     def locateMainline(self):
         screenshot, _left, width, _top=self.getAppScreenshot()
         for items,value in self.list_mainline.items():
@@ -250,7 +217,7 @@ class IDIMG:
                 return value,position
         return None,None
 
-    @debug(info="定位剿灭场景")
+    @log.wrap(info="定位剿灭场景")
     def locateAnn(self):
         screenshot, _left, width, _top=self.getAppScreenshot()
         for items,value in self.list_ann.items():
@@ -265,7 +232,7 @@ class IDIMG:
                 return value,position
         return None,None
 
-    @debug(info="定位是否开启代理")
+    @log.wrap(info="定位是否开启代理")
     def locateAuto(self):
         _screenshot, _left, _width, _top=self.getAppScreenshot()
         img = Image.open(self.img_auto_off)
@@ -287,49 +254,8 @@ class GAMEKINDS(Enum):
     龙门市区 = 6
 
 
-class UI:
-    @debug(info="初始化ui")
-    def __init__(self, title, hwnd, kind, times):
-        self.hwnd = hwnd
-        self.title = title
-        self.kind = kind
-        self.times = times
-        self.log=''
-        self.finish='将在完成一次后得出'
-
-    @debug(info="更新状态")
-    def update(self, current_cnt, msg):
-        '''
-       
-        '''
-        self.log=f"""
-    ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
-    ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
-    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.1 build0912.1528
-    ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿      https://github.com/bakashigure/mrfz
-    ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿      
-    ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿      游戏窗口可以不置顶,但请不要最小化.
-    ⢸⠇⡜⣿⡟⠄⠄⠄⠈⠙⣿⣿⣿⣿⣿⣿⣿⣿⠟⣱⣻⣿⣿⣿⣿⣿⠟⠁⢳⠃⣿⣿⣿
-    ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿"
-
-
-    正在监视进程: {self.hwnd}  {self.title} |  当前时间 {currentTime()} | 预计剩余时间  {self.finish}
-    关卡种类: {self.kind} , 正在进行第{current_cnt+1}次，共{self.times}次
-    状态:\033[0;30;47m {msg} \033[0m
-
-
-    """
-    def output(self):
-        while(1):
-            os.system("cls")
-            print(self.log)
-            for items in ll.log:
-                print(items)
-            sleep(1)
-        
-
 # 摸鱼time
-@debug("摸鱼")
+@log.wrap("摸鱼")
 def sleep(sec):
     time.sleep(sec)
 
@@ -344,8 +270,8 @@ def isAdmin():
     except:
         return False
 
-@debug("点击坐标")
-def pclick(hwnd,position):
+@log.wrap("点击坐标")
+def mouse_click(hwnd,position):
     hwnd=int(hwnd)
     p=win32api.MAKELONG(position[0],position[1])
     win32gui.SendMessage(hwnd,win32con.WM_ACTIVATE,win32con.WA_ACTIVE,0)
@@ -356,12 +282,12 @@ def pclick(hwnd,position):
 
 
 # 获取当前窗口句柄
-@debug("获取当前窗口句柄")
+@log.wrap("获取当前窗口句柄")
 def currentHwnd():
     return win32gui.GetForegroundWindow()
 
 # 切换进程并置顶
-@debug("切换进程并置顶")
+@log.wrap("切换进程并置顶")
 def switchHwnd(hwnd):
     hwnd=int(hwnd)
     try:
@@ -412,7 +338,7 @@ def main():
     """
     )
 
-    msvcrt.getch()
+    os.system('pause')
     os.system("cls")
 
     if isAdmin():
@@ -420,7 +346,7 @@ def main():
     else:
         print("鼠标点击需要管理员权限，请以管理员权限运行重试.")
         print("按任意键退出.")
-        msvcrt.getch()
+        os.system("pause")
         os._exit(1)
 
     sb = IDIMG()
@@ -428,19 +354,19 @@ def main():
     con_hwnd=currentHwnd()
     if sb.game_kind == 2:
         sb.game_ann_kind = eval(input("\033[0;30;47m请输入剿灭关卡:  1.[切尔诺伯格]   2.[龙门外环]   3.[龙门市区]\033[0m"))
-    sb.game_times = eval(input("\033[0;30;47m请输入代刷的次数(当前体力/每关耗体): \033[0m"))
-    print("请将游戏打开至'右下角蓝色开始行动',会自动识别.")
+    sb.game_times = eval(input("\033[0;30;47m请输入循环刷图次数: \033[0m"))
+    print("请将游戏打开至'右下角蓝色开始行动',将在3s后自动识别.")
     sleep(3)
 
     if sb.game_kind == 1:
-        ui = UI(sb.game_hwnd, sb.game_title, GAMEKINDS(sb.game_kind).name, sb.game_times)
+        ui = Ui(sb.game_hwnd, sb.game_title, GAMEKINDS(sb.game_kind).name, sb.game_times)
     else:
         _gamekinds = (
             str(GAMEKINDS(sb.game_kind).name)
             + "-"
             + str(GAMEKINDS(sb.game_ann_kind + 3).name)
         )
-        ui = UI(sb.game_hwnd, sb.game_title, _gamekinds, sb.game_times)
+        ui = Ui(sb.game_hwnd, sb.game_title, _gamekinds, sb.game_times)
     
     global start_time
     global end_time
@@ -457,44 +383,44 @@ def main():
             
                 if result==None:
                     ui.update(t, "未识别到内容，正在尝试下一次识别")
-                    sleep(2)
+                    sleep(5)
 
                 elif result == "ready":
                     if (
                         sb.locateAuto()== False
                     ):
                         ui.update(t, "您未开启代理诶，自己勾一下吧")
-                        ll.update("定位代理")
-                        sleep(2)
+                        log.update("定位代理")
+                        sleep(5)
                         continue
                     start_time=datetime.datetime.now()
                     ui.update(t, "已找到蓝色开始行动按钮,即将进行下一步")
-                    ll.update("定位蓝色开始行动")
-                    pclick(sb.game_hwnd,position)
-                    sleep(2)
+                    log.update("定位蓝色开始行动")
+                    mouse_click(sb.game_hwnd,position)
+                    sleep(5)
 
                 elif result == "start":
                     ui.update(t, "已找到红色开始行动按钮,即将进行下一步")
-                    ll.update("定位红色开始行动")
-                    pclick(sb.game_hwnd,position)
-                    sleep(2)
+                    log.update("定位红色开始行动")
+                    mouse_click(sb.game_hwnd,position)
+                    sleep(5)
 
                 elif result == "playing":
                     ui.update(t, "代理指挥作战正常运行中...")
-                    ll.update("代理指挥正常运行")
-                    sleep(2)
+                    log.update("代理指挥正常运行")
+                    sleep(5)
 
                 elif result == "success":
                     ui.update(t, "本关已完成，即将进行下一次.")
-                    ll.update("本关已完成")
-                    pclick(sb.game_hwnd,position)
-                    sleep(4)
+                    log.update("本关已完成")
+                    mouse_click(sb.game_hwnd,position)
+                    sleep(8)
                     if time_flag==0:
                         end_time=datetime.datetime.now()
                         _s=(end_time-start_time).seconds*sb.game_times
                         _mi,_se=divmod(_s,60)
                         _hr,_mi=divmod(_mi,60)
-                        ui.finish="%02d小时%02d分%02d秒"
+                        ui.finish="{}小时{}分{}秒".format(_hr,_mi,_s)
                         time_flag=1
                     break
             
@@ -509,30 +435,30 @@ def main():
                         sb.locateAuto()== False
                     ):
                         ui.update(t, "您未开启代理诶，自己勾一下吧")
-                        ll.update("定位代理")
+                        log.update("定位代理")
                         sleep(2)
                         continue
                     ui.update(t, "已找到蓝色开始行动按钮，即将进行下一步")
-                    ll.update("定位蓝色开始行动")
-                    pclick(sb.game_hwnd,position)
+                    log.update("定位蓝色开始行动")
+                    mouse_click(sb.game_hwnd,position)
                     sleep(2)
 
                 elif result == "start":
                     ui.update(t, "已找到红色开始行动，即将进行下一步")
-                    ll.update("定位红色开始行动")
-                    pclick(sb.game_hwnd,position)
+                    log.update("定位红色开始行动")
+                    mouse_click(sb.game_hwnd,position)
                     sleep(2)
 
                 elif result == "playing":
                     ui.update(t, "代理指挥作战正常运行中...")
-                    ll.update("代理指挥正常运行")
+                    log.update("代理指挥正常运行")
                     sleep(2)
 
                 elif result == "success":
                     ui.update(t, "本关已完成，即将进行下一次.")
-                    pclick(sb.game_hwnd,position)
+                    mouse_click(sb.game_hwnd,position)
                     sleep(4)
-                    pclick(sb.game_hwnd,position)
+                    mouse_click(sb.game_hwnd,position)
                     sleep(4)
                     break
 
@@ -541,7 +467,7 @@ def main():
         switchHwnd(con_hwnd)
     except:
         pass
-    msvcrt.getch()
+    os.system('pause')
 
 
 if __name__ == "__main__":
