@@ -16,7 +16,7 @@ class Log:
         return wrapper
 
     def logging(self, str):
-        while len(self.log) >= 10:
+        while len(self.log) >= 13:
             self.log.pop(0)
         self.log.append(str)
 
