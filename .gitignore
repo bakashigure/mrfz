@@ -8,6 +8,7 @@ mrfz.7z
 get_sub_handle.py
 # C extensions
 *.so
+dist/
 
 # Distribution / packaging
 .Python
