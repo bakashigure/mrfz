@@ -115,3 +115,5 @@ debug.py
 /.vscode
 .vscode/settings.json
 test/test2.py
+test/generator.py
+test/py.py

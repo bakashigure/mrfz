@@ -47,7 +47,7 @@ class Ui:
         self.log="""
     ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
     ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
-    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.2 build 315.1709
+    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.2 build 21316.15
     ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿      https://github.com/bakashigure/mrfz
     ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿      
     ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿      游戏窗口可以被遮挡覆盖,但请勿最小化.
@@ -55,14 +55,14 @@ class Ui:
     ⠄⣰⡗⠹⣿⣄⠄⠄⠄⢀⣿⣿⣿⣿⣿⣿⠟⣅⣥⣿⣿⣿⣿⠿⠋⠄⠄⣾⡌⢠⣿⡿"
 
 
-    正在监视进程: {0}  {1} |  当前时间 {2} | 预计完成时间  {3}
-    关卡种类: {4} , 正在进行第{5}次，共{6}次
-    状态:\033[0;30;47m {7} \033[0m
-    """.format(self.hwnd,self.title,currentTime(),self.finish,self.kind,self.current_cnt+1,self.times,msg)
+    
+    正在监视进程: {0}  {1} | 状态:\033[0;30;47m {2} \033[0m
+    关卡种类: {3} , 正在进行第{4}次，共{5}次
+    预计完成时间  {6}  """.format(self.hwnd,self.title,msg,self.kind,self.current_cnt+1,self.times,self.finish)
     def output(self):
         while(1):
             os.system("cls")
-            print(self.log)
+            print(self.log+' | 当前时间 {0}'.format(currentTime())+'\n' )
             for items in log.log:
                 print(items)
             sleep(0.5)
