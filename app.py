@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # @CreateTime : 2019/9/26
-# @Version 2.2 beta 2021/3/14
+# @Version 2.2  2021/3/16
 # @Author : Twitter@bakashigure
 # @Site : https://github.com/bakashigure/mrfz
 # @Software: 明日方舟代肝脚本
@@ -25,14 +25,14 @@ import win32ui
 from PIL import Image
 
 from src.images import image_base64
-from src.utils import HwndNotFoundException, ScreenshotException
+from src.utils import ArkError
 from src.ui import Ui
 from src.log import log
 
 
 class IDIMG:
     '''
-    初始化类，用于识别的截图以base64的方式存在imgae.py中，
+    初始化,用于识别的截图以base64的方式存在imgae.py中，
     b64解码后再使用BytesIO转换成python的bytes.
     '''
 
@@ -91,7 +91,7 @@ class IDIMG:
         # self.imng_ann_success=Image.open(BytesIO(self.img_byte_ann_success))
 
         '''
-        识别对象采用dict，key为关键词，value为图片的bytes
+        dict, key为关键词, value为图片的bytes
         list_mainline == 主线及材料关的识别
         list_ann_level == 剿灭的关卡种类，这个并不起作用
         list_ann == 剿灭关的识别
@@ -119,7 +119,9 @@ class IDIMG:
         }
 
         '''
-        hwnd_title为字典，存放当前系统所有的hwnd和其标题。
+        hwnd_title为字典，存放当前系统所有的窗口句柄和其标题。
+        在网易的mumu模拟器某次更新之后脚本就不起作用了, 
+        而雷电模拟器是在主窗口下开了一个子窗口渲染的画面, 通过枚举子窗口就能获得一个可以使用的hwnd
         '''
         self.hwnd_title = dict()
 
@@ -136,52 +138,61 @@ class IDIMG:
         正则匹配游戏标题是否包含关键词 "模拟器"，
         并将结果存放在game_lists中
         '''
-        self.game_lists = []
-        for h, t in self.hwnd_title.items():
-            if t != "":
-                c = f"{h} {t}"
-                result = re.match(r"([0-9]*) (.*)模拟器(.*)", c, flags=0)
-                if result != None:
-                    self.game_lists.append(result)
-
-        if (n := len(self.game_lists)) == 0:
+        def setHwnd():
+            self.game_lists = []
             for h, t in self.hwnd_title.items():
                 if t != "":
-                    print(" |", "%-10s" % h, "%.50s" % t)
-            print("\n未找到包含'模拟器'字样的游戏进程,请手动指定进程hwnd")
-            print("例子: 如您看到[   | 114514   MuMu模拟器   ]，请输入114514")
-            self.game_hwnd = eval(
-                input("\033[0;30;47m请打开模拟器后重试,或手动输入hwnd(进程名前的数字):\033[0m"))
-            self.game_title = self.hwnd_title[self.game_hwnd]
+                    c = f"{h} {t}"
+                    result = re.match(r"([0-9]*) (.*)模拟器(.*)", c, flags=0)
+                    if result != None:
+                        self.game_lists.append(result)
 
-        elif n == 1:
-            print("找到了一个可能是模拟器的进程[ ", self.game_lists[0].group(0), " ]")
-            case = eval(input("\033[0;30;47m是它吗? 输入1确定，输入0手动指定进程:\033[0m"))
-            if case == 1:
-                self.game_title = self.hwnd_title[int(
-                    self.game_lists[0].group(1))]
-                self.game_hwnd = self.game_lists[0].group(1)
-            elif case == 0:
+            if (n := len(self.game_lists)) == 0:
                 for h, t in self.hwnd_title.items():
                     if t != "":
                         print(" |", "%-10s" % h, "%.50s" % t)
+                print("\n未找到包含'模拟器'字样的游戏进程,请手动指定进程hwnd")
+                print("例子: 如您看到[   | 114514   MuMu模拟器   ]，请输入114514")
+                self.game_hwnd = eval(
+                    input("\033[0;30;47m请打开模拟器后重试,或手动输入hwnd(进程名前的数字):\033[0m"))
+                self.game_title = self.hwnd_title[self.game_hwnd]
+
+            elif n == 1:
+                print("找到了一个可能是模拟器的进程[ ", self.game_lists[0].group(0), " ]")
+                case = eval(input("\033[0;30;47m是它吗? 输入1确定，输入0手动指定进程:\033[0m"))
+                if case == 1:
+                    self.game_title = self.hwnd_title[int(
+                        self.game_lists[0].group(1))]
+                    self.game_hwnd = self.game_lists[0].group(1)
+                elif case == 0:
+                    for h, t in self.hwnd_title.items():
+                        if t != "":
+                            print(" |", "%-10s" % h, "%.50s" % t)
+                    self.game_hwnd = eval(
+                        input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
+                    #self.game_title = self.hwnd_title[self.game_hwnd]
+                    self.game_title = ''
+
+            elif n > 1:
+
+                for h, t in self.hwnd_title.items():
+                    if t != "":
+                        print(" |", "%-10s" % h, "%.50s" % t)
+                print("\n找到了多个包含模拟字样的进程，您可能想多开? 请手动指定进程hwnd(进程名前的数字)")
                 self.game_hwnd = eval(
                     input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
-                #self.game_title = self.hwnd_title[self.game_hwnd]
-                self.game_title = ''
+                self.game_title = self.hwnd_title[self.game_hwnd]
+            self.subHandle = win32gui.FindWindowEx(
+                int(self.game_hwnd), 0, None, None)
+            self.game_hwnd = self.subHandle
 
-        elif n > 1:
+        try:
+            setHwnd()
+        except:
+            print('Invalid hwnd,请检查窗口句柄是否设置正确,按任意键退出')
+            os.system('pause')
+            raise ArkError('Invalid hwnd')
 
-            for h, t in self.hwnd_title.items():
-                if t != "":
-                    print(" |", "%-10s" % h, "%.50s" % t)
-            print("\n找到了多个包含模拟字样的进程，您可能想多开? 请手动指定进程hwnd(进程名前的数字)")
-            self.game_hwnd = eval(
-                input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
-            self.game_title = self.hwnd_title[self.game_hwnd]
-        self.subHandle = win32gui.FindWindowEx(
-            int(self.game_hwnd), 0, None, None)
-        self.game_hwnd = self.subHandle
 
     @log.wrap(info="获取游戏截图")
     def getAppScreenshot(self):
@@ -209,10 +220,12 @@ class IDIMG:
                 0,
                 1,
             )
+            # be careful of memory leak - -, win32 make it shit
             win32gui.DeleteObject(saveBitMap.GetHandle())
+            saveDC.DeleteDC()
             return im_PIL, left, width, top
         except:
-            raise ScreenshotException('screenshot fail')
+            raise ArkError('Get screenshot fail')
 
     @log.wrap(info="定位主线场景")
     def locateMainline(self):
@@ -294,9 +307,9 @@ def mouse_click(hwnd, position):
     p = win32api.MAKELONG(position[0], position[1])
     win32gui.SendMessage(hwnd, win32con.WM_ACTIVATE, win32con.WA_ACTIVE, 0)
     win32api.SendMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, p)
-    sleep(0.05)
+    sleep(0.1)
     win32api.SendMessage(hwnd, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, p)
-    sleep(0.05)
+    sleep(0.1)
 
 
 # 获取当前窗口句柄
@@ -381,7 +394,7 @@ def main():
                 sleep(3)
 
             elif result == "ready":
-                Ui.start_time = time.time()
+                ui.start_time = time.time()
                 if (
                     sb.locateAuto() == False
                 ):
@@ -418,11 +431,11 @@ def main():
                 if current_count+1 == sb.game_times:
                     break
                 current_count += 1
-                if time_flag == 0:
-                    round_time = time.time()-Ui.start_time
-                    Ui.end_time = int(
-                        Ui.start_time+round_time*(sb.game_times-1))
-                    _localtime = time.localtime(Ui.end_time)
+                if time_flag == 0 and ui.start_time!=0:
+                    round_time = time.time()-ui.start_time
+                    ui.end_time = int(
+                        ui.start_time+round_time*(sb.game_times-1))
+                    _localtime = time.localtime(ui.end_time)
                     _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
                     ui.finish = _datetime
                     time_flag = 1
@@ -432,10 +445,10 @@ def main():
             result, position = sb.locateAnn()
             if result == None:
                 ui.update(current_count, "未识别到内容，正在尝试下一次识别")
-                sleep(3)
+                sleep(2)
 
             elif result == "ready":
-                Ui.start_time = time.time()
+                ui.start_time = time.time()
                 if (
                     sb.locateAuto() == False
                 ):
@@ -471,11 +484,11 @@ def main():
                 if current_count+1 == sb.game_times:
                     break
                 current_count += 1
-                if time_flag == 0:
-                    round_time = time.time()-Ui.start_time
-                    Ui.end_time = int(
-                        Ui.start_time+round_time*(sb.game_times-1))
-                    _localtime = time.localtime(Ui.end_time)
+                if time_flag == 0 and ui.start_time!=0:
+                    round_time = time.time()-ui.start_time
+                    ui.end_time = int(
+                        ui.start_time+round_time*(sb.game_times-1))
+                    _localtime = time.localtime(ui.end_time)
                     _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
                     ui.finish = _datetime
                     time_flag = 1                
