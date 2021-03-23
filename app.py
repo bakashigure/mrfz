@@ -540,12 +540,13 @@ def main():
     while 1:
         run()
         ui.stop_flag = 1
-        ui.game_times = eval(
+        ui.times = eval(
                     input("\033[0;30;47m继续刷几次? 如果不需要直接关掉窗口就好: :\033[0m"))
         ui.finish=' 将在完成一次后得出'
         ui.current_cnt=0
-        sb.game_times=ui.game_times
+        sb.game_times=ui.times
         ui.stop_flag=0
+
         
 
 
