@@ -117,3 +117,6 @@ debug.py
 test/test2.py
 test/generator.py
 test/py.py
+ark_settings.json
+test/test_json.py
+test_json.py

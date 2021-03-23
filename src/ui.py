@@ -20,6 +20,7 @@ class Ui:
     6.几乎没有错误处理，所以请不要在输入数字的地方输入其他字符.
     7.目前仅支持[简体中文]的游戏内容.
     8.建议使用雷电模拟器,mumu在某次更新之后无法正常使用该脚本.
+    9.代理失败会默认选择继续结算.
 
 
 
@@ -40,6 +41,7 @@ class Ui:
         self.start_time=0
         self.end_time=0
         self.current_cnt=0
+        self.stop_flag= 0
 
     @log.wrap(info="更新状态")
     def update(self, current_cnt, msg):
@@ -47,7 +49,7 @@ class Ui:
         self.log="""
     ⣿⣿⡟⠁⠄⠟⣁⠄⢡⣿⣿⣿⣿⣿⣿⣦⣼⢟⢀⡼⠃⡹⠃⡀⢸⡿⢸⣿⣿⣿⣿⣿⡟
     ⣿⣿⠃⠄⢀⣾⠋⠓⢰⣿⣿⣿⣿⣿⣿⠿⣿⣿⣾⣅⢔⣕⡇⡇⡼⢁⣿⣿⣿⣿⣿⣿⢣
-    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.2 build 21316.15
+    ⣿⡟⠄⠄⣾⣇⠷⣢⣿⣿⣿⣿⣿⣿⣿⣭⣀⡈⠙⢿⣿⣿⡇⡧⢁⣾⣿⣿⣿⣿⣿⢏⣾      明日方舟代肝脚本 Version2.2  2021/3/23
     ⣿⡇⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⢻⠇⠄⠄⢿⣿⡇⢡⣾⣿⣿⣿⣿⣿⣏⣼⣿      https://github.com/bakashigure/mrfz
     ⣿⣷⢰⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⢰⣧⣀⡄⢀⠘⡿⣰⣿⣿⣿⣿⣿⣿⠟⣼⣿⣿      
     ⢹⣿⢸⣿⣿⠟⠻⢿⣿⣿⣿⣿⣿⣿⣿⣶⣭⣉⣤⣿⢈⣼⣿⣿⣿⣿⣿⣿⠏⣾⣹⣿⣿      游戏窗口可以被遮挡覆盖,但请勿最小化.
@@ -60,7 +62,7 @@ class Ui:
     关卡种类: {3} , 正在进行第{4}次，共{5}次
     预计完成时间  {6}  """.format(self.hwnd,self.title,msg,self.kind,self.current_cnt+1,self.times,self.finish)
     def output(self):
-        while(1):
+        while(self.stop_flag == 0):
             os.system("cls")
             print(self.log+' | 当前时间 {0}'.format(currentTime())+'\n' )
             for items in log.log:
