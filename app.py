@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# @CreateTime : 2019/9/26
-# @Version 2.2  2021/3/16
+# @Create Time : 2019/9/26
+# @Update Time : 2021/3/23
+# @Version : 2.2  
 # @Author : Twitter@bakashigure
 # @Site : https://github.com/bakashigure/mrfz
 # @Software: 明日方舟代肝脚本
@@ -10,6 +11,8 @@ import datetime
 import base64
 import ctypes
 import os
+
+import inspect
 import re
 import sys
 import threading
@@ -72,6 +75,7 @@ class IDIMG:
         self.img_playing = BytesIO(self.img_byte_playing)
         # self.img_playing = Image.open(BytesIO(self.img_byte_playing))
 
+        '''
         self.img_byte_ann_chernob = base64.b64decode(image_base64.ann_chernob)
         self.img_ann_chernob = BytesIO(self.img_byte_ann_chernob)
         # self.img_ann_chernob=Image.open(BytesIO(self.img_byte_ann_chernob))
@@ -86,9 +90,20 @@ class IDIMG:
         self.img_ann_outskirts = BytesIO(self.img_byte_ann_outskirts)
         # self.img_ann_outskirts=Image.open(BytesIO(self.img_byte_ann_outskirts))
 
+        '''
         self.img_byte_ann_success = base64.b64decode(image_base64.ann_success)
         self.img_ann_success = BytesIO(self.img_byte_ann_success)
         # self.imng_ann_success=Image.open(BytesIO(self.img_byte_ann_success))
+
+        self.img_byte_levelup = base64.b64decode(image_base64.level_up)
+        self.img_levelup = BytesIO(self.img_byte_levelup)
+
+        self.img_byte_mission_fail_continue = base64.b64decode(image_base64.mission_fail_continue)
+        self.img_mission_fail_continue = BytesIO(self.img_byte_mission_fail_continue)
+
+        self.img_byte_mission_fail_quit = base64.b64decode(image_base64.mission_fail_quit)
+        self.img_mission_fail_quit = BytesIO(self.img_byte_mission_fail_quit)
+        
 
         '''
         dict, key为关键词, value为图片的bytes
@@ -102,6 +117,9 @@ class IDIMG:
             self.img_playing: "playing",
             self.img_success: "success",
             self.img_fail: "fail",
+            self.img_levelup:"levelup",
+            self.img_mission_fail_continue:"continue",
+           #self.img_mission_fail_quit:"quit"
         }
 
         '''
@@ -116,6 +134,9 @@ class IDIMG:
             self.img_start: "start",
             self.img_playing: "playing",
             self.img_ann_success: "success",
+            self.img_levelup:"levelup",
+            self.img_mission_fail_continue:"continue",
+           #self.img_mission_fail_quit:"quit"
         }
 
         '''
@@ -174,7 +195,6 @@ class IDIMG:
                     self.game_title = ''
 
             elif n > 1:
-
                 for h, t in self.hwnd_title.items():
                     if t != "":
                         print(" |", "%-10s" % h, "%.50s" % t)
@@ -234,6 +254,7 @@ class IDIMG:
             img = Image.open(items)
             img = img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
                              Image.ANTIALIAS,)
+            # 1482*846
             if(res := pag.locate(img, screenshot, confidence=0.95)) != None:
                 position = []
                 position.append(pag.center(res)[0])
@@ -286,14 +307,12 @@ def sleep(sec):
     time.sleep(sec)
 
 # 当前时间
-
-
 def currentTime():
     return time.strftime("%H:%M:%S", time.localtime(time.time()))
 
+
+
 # 是否以管理员权限运行
-
-
 def isAdmin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -354,15 +373,17 @@ def main():
     
     sb = IDIMG()
     sb.game_kind = eval(
-        input("\033[0;30;47m请输入关卡种类:  1.[主线/材料]   2.[剿灭] \033[0m"))
-    con_hwnd = currentHwnd()
+        input("\033[0;30;47m请输入关卡种类:  1.[主线/材料/活动]   2.[剿灭] \033[0m"))
+    con_hwnd = currentHwnd() # 获取一个代刷窗口的句柄，以便刷完后置顶
 
+    '''
     if sb.game_kind == 2:
         sb.game_ann_kind = eval(
             input("\033[0;30;47m请输入剿灭关卡:  1.[切尔诺伯格]   2.[龙门外环]   3.[龙门市区]\033[0m"))
-
+    '''
+    
     sb.game_times = eval(input("\033[0;30;47m请输入循环刷图次数: \033[0m"))
-    print("请将游戏打开至'右下角蓝色开始行动',将在3s后自动识别.")
+    print("\n 请将游戏打开至'右下角蓝色开始行动',将在3s后开始识别.")
     sleep(3)
 
     if sb.game_kind == 1:
@@ -371,134 +392,164 @@ def main():
     else:
         _gamekinds = (
             str(GAMEKINDS(sb.game_kind).name)
+        )
+        '''
+        _gamekinds = (
+            str(GAMEKINDS(sb.game_kind).name)
             + "-"
             + str(GAMEKINDS(sb.game_ann_kind + 3).name)
         )
+        '''
         ui = Ui(sb.game_hwnd, sb.game_title, _gamekinds, sb.game_times)
 
+    def run():
+        time_flag = 0
+        _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
+                                        ui.title, ui.current_cnt+1, ui.times)
+        os.system(_title)
+        thread_log = threading.Thread(target=ui.output)
+        thread_log.start()
+        print(thread_log)
 
-    time_flag = 0
-    _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
-                                       ui.title, ui.current_cnt+1, ui.times)
-    os.system(_title)
-    thread_log = threading.Thread(target=ui.output)
-    thread_log.start()
+        
+        current_count = 0 # 当前次数
+        if sb.game_kind == 1:
+            while(1):
+                result, position = sb.locateMainline()
 
-    current_count = 0 # 当前次数
-    if sb.game_kind == 1:
-        while(1):
-            result, position = sb.locateMainline()
+                if result == None:
+                    ui.update(current_count, "未识别到内容，正在尝试下一次识别")
+                    sleep(3)
 
-            if result == None:
-                ui.update(current_count, "未识别到内容，正在尝试下一次识别")
-                sleep(3)
+                elif result == "ready":
+                    ui.start_time = time.time()
+                    if (
+                        sb.locateAuto() == False
+                    ):
+                        ui.update(current_count, "您未开启代理诶，自己勾一下吧")
+                        log.update("定位代理")
+                        sleep(5)
+                        continue
+                    _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
+                                                    ui.title, current_count+1, ui.times)
+                    os.system(_title)
 
-            elif result == "ready":
-                ui.start_time = time.time()
-                if (
-                    sb.locateAuto() == False
-                ):
-                    ui.update(current_count, "您未开启代理诶，自己勾一下吧")
-                    log.update("定位代理")
-                    sleep(5)
-                    continue
-                _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
-                                                ui.title, current_count+1, ui.times)
-                os.system(_title)
-
-                ui.update(current_count, "已找到蓝色开始行动按钮,即将进行下一步")
-                log.update("定位蓝色开始行动")  
-                mouse_click(sb.game_hwnd, position)
-                sleep(5)
-
-            elif result == "start":
-                ui.update(current_count, "已找到红色开始行动按钮,即将进行下一步")
-                log.update("定位红色开始行动")
-                mouse_click(sb.game_hwnd, position)
-                sleep(5)
-
-            elif result == "playing":
-                ui.update(current_count, "代理指挥作战正常运行中...")
-                log.update("代理指挥正常运行")
-                sleep(10)
-
-            elif result == "success":
-                ui.update(current_count, "本关已完成，即将进行下一次.")
-                log.update("本关已完成")
-                mouse_click(sb.game_hwnd, position)
-                sleep(5)
-
-                if current_count+1 == sb.game_times:
-                    break
-                current_count += 1
-                if time_flag == 0 and ui.start_time!=0:
-                    round_time = time.time()-ui.start_time
-                    ui.end_time = int(
-                        ui.start_time+round_time*(sb.game_times-1))
-                    _localtime = time.localtime(ui.end_time)
-                    _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
-                    ui.finish = _datetime
-                    time_flag = 1
-
-    elif sb.game_kind == 2:
-        while(1):
-            result, position = sb.locateAnn()
-            if result == None:
-                ui.update(current_count, "未识别到内容，正在尝试下一次识别")
-                sleep(2)
-
-            elif result == "ready":
-                ui.start_time = time.time()
-                if (
-                    sb.locateAuto() == False
-                ):
-                    ui.update(current_count, "您未开启代理诶，自己勾一下吧")
-                    log.update("定位代理")
+                    ui.update(current_count, "已找到蓝色开始行动按钮,即将进行下一步")
+                    log.update("定位蓝色开始行动")  
+                    mouse_click(sb.game_hwnd, position)
                     sleep(4)
-                    continue
-                _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
-                                                ui.title, current_count+1, ui.times)
-                os.system(_title)
-                ui.update(current_count, "已找到蓝色开始行动按钮，即将进行下一步")
-                log.update("定位蓝色开始行动")
-                mouse_click(sb.game_hwnd, position)
-                sleep(4)
 
-            elif result == "start":
-                ui.update(current_count, "已找到红色开始行动，即将进行下一步")
-                log.update("定位红色开始行动")
-                mouse_click(sb.game_hwnd, position)
-                sleep(4)
+                elif result == "start":
+                    ui.update(current_count, "已找到红色开始行动按钮,即将进行下一步")
+                    log.update("定位红色开始行动")
+                    mouse_click(sb.game_hwnd, position)
+                    sleep(5)
 
-            elif result == "playing":
-                ui.update(current_count, "代理指挥作战正常运行中...")
-                log.update("代理指挥正常运行")
-                sleep(10)
+                elif result == "playing":
+                    ui.update(current_count, "代理指挥作战正常运行中...")
+                    log.update("代理指挥正常运行")
+                    sleep(10)
 
-            elif result == "success":
-                ui.update(current_count, "本关已完成，即将进行下一次.")
-                mouse_click(sb.game_hwnd, position)
-                sleep(4)
-                mouse_click(sb.game_hwnd, position)
-                sleep(4)
-                if current_count+1 == sb.game_times:
-                    break
-                current_count += 1
-                if time_flag == 0 and ui.start_time!=0:
-                    round_time = time.time()-ui.start_time
-                    ui.end_time = int(
-                        ui.start_time+round_time*(sb.game_times-1))
-                    _localtime = time.localtime(ui.end_time)
-                    _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
-                    ui.finish = _datetime
-                    time_flag = 1                
+                elif result == "success":
+                    ui.update(current_count, "本关已完成，即将进行下一次.")
+                    log.update("本关已完成")
+                    mouse_click(sb.game_hwnd, position)
+                    sleep(10)
 
-    ui.update(current_count, "本次代理指挥作战已全部完成，感谢使用!")
-    try:
-        switchHwnd(con_hwnd)
-    except:
-        pass
-    os.system('pause')
+                    if current_count+1 == sb.game_times:
+                        break
+                    current_count += 1
+                    if time_flag == 0 and ui.start_time!=0:
+                        round_time = time.time()-ui.start_time
+                        ui.end_time = int(
+                            ui.start_time+round_time*(sb.game_times-1))
+                        _localtime = time.localtime(ui.end_time)
+                        _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
+                        ui.finish = _datetime
+                        time_flag = 1
+                elif result =='continue':
+                    ui.update(current_count,"代理翻车,默认选择继续结算.")
+                    log.update("代理翻车,默认选择继续结算.")
+                    mouse_click(sb.game_hwnd,position)
+                    sleep(3)
+
+        elif sb.game_kind == 2:
+            while(1):
+                result, position = sb.locateAnn()
+                if result == None:
+                    ui.update(current_count, "未识别到内容，正在尝试下一次识别")
+                    sleep(2)
+
+                elif result == "ready":
+                    ui.start_time = time.time()
+                    if (
+                        sb.locateAuto() == False
+                    ):
+                        ui.update(current_count, "您未开启代理诶，自己勾一下吧")
+                        log.update("定位代理")
+                        sleep(4)
+                        continue
+                    _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
+                                                    ui.title, current_count+1, ui.times)
+                    os.system(_title)
+                    ui.update(current_count, "已找到蓝色开始行动按钮，即将进行下一步")
+                    log.update("定位蓝色开始行动")
+                    mouse_click(sb.game_hwnd, position)
+                    sleep(4)
+
+                elif result == "start":
+                    ui.update(current_count, "已找到红色开始行动，即将进行下一步")
+                    log.update("定位红色开始行动")
+                    mouse_click(sb.game_hwnd, position)
+                    sleep(4)
+
+                elif result == "playing":
+                    ui.update(current_count, "代理指挥作战正常运行中...")
+                    log.update("代理指挥正常运行")
+                    sleep(10)
+
+                elif result == "success":
+                    ui.update(current_count, "本关已完成，即将进行下一次.")
+                    mouse_click(sb.game_hwnd, position)
+                    sleep(4)
+                    mouse_click(sb.game_hwnd, position)
+                    sleep(4)
+                    if current_count+1 == sb.game_times:
+                        break
+                    current_count += 1
+                    if time_flag == 0 and ui.start_time!=0:
+                        round_time = time.time()-ui.start_time
+                        ui.end_time = int(
+                            ui.start_time+round_time*(sb.game_times-1))
+                        _localtime = time.localtime(ui.end_time)
+                        _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
+                        ui.finish = _datetime
+                        time_flag = 1
+
+                elif result =='continue':
+                    ui.update(current_count,"代理翻车,默认选择继续结算.")
+                    log.update("代理翻车,默认选择继续结算.")
+                    mouse_click(sb.game_hwnd,position)
+                    sleep(3)
+
+        ui.update(current_count, "本次代理指挥作战已全部完成，感谢使用!")
+        try:
+            switchHwnd(con_hwnd)
+        except:
+            pass
+    while 1:
+        run()
+        ui.stop_flag = 1
+        ui.game_times = eval(
+                    input("\033[0;30;47m继续刷几次? 如果不需要直接关掉窗口就好: :\033[0m"))
+        ui.finish=' 将在完成一次后得出'
+        ui.current_cnt=0
+        sb.game_times=ui.game_times
+        ui.stop_flag=0
+        
+
+
+
 
 
 if __name__ == "__main__":
