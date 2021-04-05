@@ -252,8 +252,14 @@ class IDIMG:
         screenshot, _left, width, _top = self.getAppScreenshot()
         for items, value in self.list_mainline.items():
             img = Image.open(items)
+            # for mumu emulator
+            #img = img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
+            #                 Image.ANTIALIAS,)
+                    
+            # for leidian emulator
             img = img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
-                             Image.ANTIALIAS,)
+                             Image.ANTIALIAS,)            
+
             # 1482*846
             if(res := pag.locate(img, screenshot, confidence=0.95)) != None:
                 position = []
@@ -383,6 +389,7 @@ def main():
     '''
     
     sb.game_times = eval(input("\033[0;30;47m请输入循环刷图次数: \033[0m"))
+    sb.game_times=int(sb.game_times)
     print("\n 请将游戏打开至'右下角蓝色开始行动',将在3s后开始识别.")
     sleep(3)
 
@@ -443,7 +450,7 @@ def main():
                     ui.update(current_count, "已找到红色开始行动按钮,即将进行下一步")
                     log.update("定位红色开始行动")
                     mouse_click(sb.game_hwnd, position)
-                    sleep(5)
+                    sleep(3)
 
                 elif result == "playing":
                     ui.update(current_count, "代理指挥作战正常运行中...")
@@ -454,7 +461,7 @@ def main():
                     ui.update(current_count, "本关已完成，即将进行下一次.")
                     log.update("本关已完成")
                     mouse_click(sb.game_hwnd, position)
-                    sleep(10)
+                    sleep(7)
 
                     if current_count+1 == sb.game_times:
                         break
@@ -467,9 +474,16 @@ def main():
                         _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
                         ui.finish = _datetime
                         time_flag = 1
+                        
                 elif result =='continue':
                     ui.update(current_count,"代理翻车,默认选择继续结算.")
                     log.update("代理翻车,默认选择继续结算.")
+                    mouse_click(sb.game_hwnd,position)
+                    sleep(3)
+
+                elif result == 'levelup':
+                    ui.update(current_count,"检测到升级.")
+                    log.update("检测到升级.")
                     mouse_click(sb.game_hwnd,position)
                     sleep(3)
 
@@ -532,6 +546,12 @@ def main():
                     mouse_click(sb.game_hwnd,position)
                     sleep(3)
 
+                elif result == 'levelup':
+                    ui.update(current_count,"检测到升级.")
+                    log.update("检测到升级.")
+                    mouse_click(sb.game_hwnd,position)
+                    sleep(3)
+
         ui.update(current_count, "本次代理指挥作战已全部完成，感谢使用!")
         try:
             switchHwnd(con_hwnd)
@@ -541,17 +561,12 @@ def main():
         run()
         ui.stop_flag = 1
         ui.times = eval(
-                    input("\033[0;30;47m继续刷几次? 如果不需要直接关掉窗口就好: :\033[0m"))
+                    input("\n\033[0;30;47m继续刷几次? 如果不需要直接关掉窗口就好 :\033[0m"))
+        ui.times=int(ui.times)
         ui.finish=' 将在完成一次后得出'
         ui.current_cnt=0
         sb.game_times=ui.times
         ui.stop_flag=0
-
-        
-
-
-
-
 
 if __name__ == "__main__":
     main()
