@@ -1,5 +1,4 @@
 import time
-import pixivpy3
 def currentTime():
     return time.strftime("%H:%M:%S", time.localtime(time.time()))
 

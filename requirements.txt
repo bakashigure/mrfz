@@ -1,5 +1,0 @@
-PyAutoGUI==0.9.50
-pywin32==228
-pillow
-opencv-python
-

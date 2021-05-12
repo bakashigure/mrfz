@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # @Create Time : 2019/9/26
-# @Update Time : 2021/3/23
-# @Version : 2.2  
+# @Update Time : 2021/5/12
+# @Version : 2.2
 # @Author : Twitter@bakashigure
 # @Site : https://github.com/bakashigure/mrfz
 # @Software: 明日方舟代肝脚本
@@ -98,12 +98,14 @@ class IDIMG:
         self.img_byte_levelup = base64.b64decode(image_base64.level_up)
         self.img_levelup = BytesIO(self.img_byte_levelup)
 
-        self.img_byte_mission_fail_continue = base64.b64decode(image_base64.mission_fail_continue)
-        self.img_mission_fail_continue = BytesIO(self.img_byte_mission_fail_continue)
+        self.img_byte_mission_fail_continue = base64.b64decode(
+            image_base64.mission_fail_continue)
+        self.img_mission_fail_continue = BytesIO(
+            self.img_byte_mission_fail_continue)
 
-        self.img_byte_mission_fail_quit = base64.b64decode(image_base64.mission_fail_quit)
+        self.img_byte_mission_fail_quit = base64.b64decode(
+            image_base64.mission_fail_quit)
         self.img_mission_fail_quit = BytesIO(self.img_byte_mission_fail_quit)
-        
 
         '''
         dict, key为关键词, value为图片的bytes
@@ -117,9 +119,9 @@ class IDIMG:
             self.img_playing: "playing",
             self.img_success: "success",
             self.img_fail: "fail",
-            self.img_levelup:"levelup",
-            self.img_mission_fail_continue:"continue",
-           #self.img_mission_fail_quit:"quit"
+            self.img_levelup: "levelup",
+            self.img_mission_fail_continue: "continue",
+            # self.img_mission_fail_quit:"quit"
         }
 
         '''
@@ -134,9 +136,9 @@ class IDIMG:
             self.img_start: "start",
             self.img_playing: "playing",
             self.img_ann_success: "success",
-            self.img_levelup:"levelup",
-            self.img_mission_fail_continue:"continue",
-           #self.img_mission_fail_quit:"quit"
+            self.img_levelup: "levelup",
+            self.img_mission_fail_continue: "continue",
+            # self.img_mission_fail_quit:"quit"
         }
 
         '''
@@ -213,7 +215,6 @@ class IDIMG:
             os.system('pause')
             raise ArkError('Invalid hwnd')
 
-
     @log.wrap(info="获取游戏截图")
     def getAppScreenshot(self):
         try:
@@ -243,25 +244,28 @@ class IDIMG:
             # be careful of memory leak - -, win32 make it shit
             win32gui.DeleteObject(saveBitMap.GetHandle())
             saveDC.DeleteDC()
-            return im_PIL, left, width, top
+            return im_PIL,  width, height
         except:
             raise ArkError('Get screenshot fail')
 
     @log.wrap(info="定位主线场景")
     def locateMainline(self):
-        screenshot, _left, width, _top = self.getAppScreenshot()
+        screenshot,  width, height = self.getAppScreenshot()
+
         for items, value in self.list_mainline.items():
             img = Image.open(items)
             # for mumu emulator
-            #img = img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
+            # img = img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
             #                 Image.ANTIALIAS,)
-                    
-            # for leidian emulator
-            img = img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
-                             Image.ANTIALIAS,)            
 
+            # for leidian emulator
+
+            radio = ((height-36)/810)
+            _width = int(radio*img.size[0])
+            _height = int(radio*img.size[1])
+            img.resize((_width, _height))
             # 1482*846
-            if(res := pag.locate(img, screenshot, confidence=0.95)) != None:
+            if(res := pag.locate(img, screenshot, confidence=0.8)) != None:
                 position = []
                 position.append(pag.center(res)[0])
                 position.append(pag.center(res)[1])
@@ -271,11 +275,14 @@ class IDIMG:
 
     @log.wrap(info="定位剿灭场景")
     def locateAnn(self):
-        screenshot, _left, width, _top = self.getAppScreenshot()
+        screenshot,  width, height = self.getAppScreenshot()
         for items, value in self.list_ann.items():
             img = Image.open(items)
-            img = img.resize((int(width / 1440 * img.size[0]), int(width / 1440 * img.size[1])),
-                             Image.ANTIALIAS,)
+            radio = (height-36)/810
+            _width = int(radio*img.size[0])
+            _height = int(radio*img.size[1])
+            img.resize(size=(_width, _height))
+
             if(res := pag.locate(img, screenshot, confidence=0.8)) != None:
                 position = []
                 position.append(pag.center(res)[0])
@@ -286,11 +293,14 @@ class IDIMG:
 
     @log.wrap(info="定位是否开启代理")
     def locateAuto(self):
-        _screenshot, _left, _width, _top = self.getAppScreenshot()
+        _screenshot,  _width, _height = self.getAppScreenshot()
         img = Image.open(self.img_auto_off)
-        img = img.resize(
-            (int(_width / 1440 * img.size[0]),
-             int(_width / 1440 * img.size[1])),
+        radio = (_height-36)/810
+        _width = int(radio*img.size[0])
+        _height = int(radio*img.size[1])
+        img.resize(
+            (_width,
+             _height),
             Image.ANTIALIAS,
         )
         if pag.locate(img, _screenshot, confidence=0.8) != None:
@@ -313,9 +323,10 @@ def sleep(sec):
     time.sleep(sec)
 
 # 当前时间
+
+
 def currentTime():
     return time.strftime("%H:%M:%S", time.localtime(time.time()))
-
 
 
 # 是否以管理员权限运行
@@ -376,20 +387,20 @@ def main():
 
     os.system('pause')
     os.system("cls")
-    
+
     sb = IDIMG()
     sb.game_kind = eval(
         input("\033[0;30;47m请输入关卡种类:  1.[主线/材料/活动]   2.[剿灭] \033[0m"))
-    con_hwnd = currentHwnd() # 获取一个代刷窗口的句柄，以便刷完后置顶
+    con_hwnd = currentHwnd()  # 获取一个代刷窗口的句柄，以便刷完后置顶
 
     '''
     if sb.game_kind == 2:
         sb.game_ann_kind = eval(
             input("\033[0;30;47m请输入剿灭关卡:  1.[切尔诺伯格]   2.[龙门外环]   3.[龙门市区]\033[0m"))
     '''
-    
+
     sb.game_times = eval(input("\033[0;30;47m请输入循环刷图次数: \033[0m"))
-    sb.game_times=int(sb.game_times)
+    sb.game_times = int(sb.game_times)
     print("\n 请将游戏打开至'右下角蓝色开始行动',将在3s后开始识别.")
     sleep(3)
 
@@ -412,21 +423,20 @@ def main():
     def run():
         time_flag = 0
         _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
-                                        ui.title, ui.current_cnt+1, ui.times)
+                                                 ui.title, ui.current_cnt+1, ui.times)
         os.system(_title)
         thread_log = threading.Thread(target=ui.output)
         thread_log.start()
         print(thread_log)
 
-        
-        current_count = 0 # 当前次数
+        current_count = 0  # 当前次数
         if sb.game_kind == 1:
             while(1):
                 result, position = sb.locateMainline()
 
                 if result == None:
                     ui.update(current_count, "未识别到内容，正在尝试下一次识别")
-                    sleep(3)
+                    sleep(1)
 
                 elif result == "ready":
                     ui.start_time = time.time()
@@ -438,11 +448,11 @@ def main():
                         sleep(5)
                         continue
                     _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
-                                                    ui.title, current_count+1, ui.times)
+                                                             ui.title, current_count+1, ui.times)
                     os.system(_title)
 
                     ui.update(current_count, "已找到蓝色开始行动按钮,即将进行下一步")
-                    log.update("定位蓝色开始行动")  
+                    log.update("定位蓝色开始行动")
                     mouse_click(sb.game_hwnd, position)
                     sleep(4)
 
@@ -460,31 +470,33 @@ def main():
                 elif result == "success":
                     ui.update(current_count, "本关已完成，即将进行下一次.")
                     log.update("本关已完成")
+                    sleep(3)
                     mouse_click(sb.game_hwnd, position)
                     sleep(7)
 
                     if current_count+1 == sb.game_times:
                         break
                     current_count += 1
-                    if time_flag == 0 and ui.start_time!=0:
+                    if time_flag == 0 and ui.start_time != 0:
                         round_time = time.time()-ui.start_time
                         ui.end_time = int(
                             ui.start_time+round_time*(sb.game_times-1))
                         _localtime = time.localtime(ui.end_time)
-                        _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
+                        _datetime = time.strftime(
+                            "%Y/%m/%d %H:%M:%S", _localtime)
                         ui.finish = _datetime
                         time_flag = 1
-                        
-                elif result =='continue':
-                    ui.update(current_count,"代理翻车,默认选择继续结算.")
+
+                elif result == 'continue':
+                    ui.update(current_count, "代理翻车,默认选择继续结算.")
                     log.update("代理翻车,默认选择继续结算.")
-                    mouse_click(sb.game_hwnd,position)
+                    mouse_click(sb.game_hwnd, position)
                     sleep(3)
 
                 elif result == 'levelup':
-                    ui.update(current_count,"检测到升级.")
+                    ui.update(current_count, "检测到升级.")
                     log.update("检测到升级.")
-                    mouse_click(sb.game_hwnd,position)
+                    mouse_click(sb.game_hwnd, position)
                     sleep(3)
 
         elif sb.game_kind == 2:
@@ -504,7 +516,7 @@ def main():
                         sleep(4)
                         continue
                     _title = 'title {0} {1}  {2}/{3}'.format(ui.hwnd,
-                                                    ui.title, current_count+1, ui.times)
+                                                             ui.title, current_count+1, ui.times)
                     os.system(_title)
                     ui.update(current_count, "已找到蓝色开始行动按钮，即将进行下一步")
                     log.update("定位蓝色开始行动")
@@ -531,25 +543,26 @@ def main():
                     if current_count+1 == sb.game_times:
                         break
                     current_count += 1
-                    if time_flag == 0 and ui.start_time!=0:
+                    if time_flag == 0 and ui.start_time != 0:
                         round_time = time.time()-ui.start_time
                         ui.end_time = int(
                             ui.start_time+round_time*(sb.game_times-1))
                         _localtime = time.localtime(ui.end_time)
-                        _datetime = time.strftime("%Y/%m/%d %H:%M:%S", _localtime)
+                        _datetime = time.strftime(
+                            "%Y/%m/%d %H:%M:%S", _localtime)
                         ui.finish = _datetime
                         time_flag = 1
 
-                elif result =='continue':
-                    ui.update(current_count,"代理翻车,默认选择继续结算.")
+                elif result == 'continue':
+                    ui.update(current_count, "代理翻车,默认选择继续结算.")
                     log.update("代理翻车,默认选择继续结算.")
-                    mouse_click(sb.game_hwnd,position)
+                    mouse_click(sb.game_hwnd, position)
                     sleep(3)
 
                 elif result == 'levelup':
-                    ui.update(current_count,"检测到升级.")
+                    ui.update(current_count, "检测到升级.")
                     log.update("检测到升级.")
-                    mouse_click(sb.game_hwnd,position)
+                    mouse_click(sb.game_hwnd, position)
                     sleep(3)
 
         ui.update(current_count, "本次代理指挥作战已全部完成，感谢使用!")
@@ -561,12 +574,13 @@ def main():
         run()
         ui.stop_flag = 1
         ui.times = eval(
-                    input("\n\033[0;30;47m继续刷几次? 如果不需要直接关掉窗口就好 :\033[0m"))
-        ui.times=int(ui.times)
-        ui.finish=' 将在完成一次后得出'
-        ui.current_cnt=0
-        sb.game_times=ui.times
-        ui.stop_flag=0
+            input("\n\033[0;30;47m继续刷几次? 如果不需要直接关掉窗口就好 :\033[0m"))
+        ui.times = int(ui.times)
+        ui.finish = ' 将在完成一次后得出'
+        ui.current_cnt = 0
+        sb.game_times = ui.times
+        ui.stop_flag = 0
+
 
 if __name__ == "__main__":
     main()
