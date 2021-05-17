@@ -25,6 +25,8 @@ import win32api
 import win32con
 import win32gui
 import win32ui
+import win32process
+import psutil
 from PIL import Image
 
 from src.images import image_base64
@@ -42,6 +44,7 @@ class IDIMG:
     def __init__(self):
         self.game_times = 0  # 游戏回合数
         self.game_hwnd = 0  # 游戏窗口句柄hwnd
+        self.game_pid = 0 # 游戏进程PID
         self.game_kind = 1  # 游戏类型 | 1:主线及材料 | 2:剿灭
         self.game_ann_kind = 1  # 剿灭种类
         self.game_title = ""  # 模拟器标题
@@ -204,9 +207,11 @@ class IDIMG:
                 self.game_hwnd = eval(
                     input("\033[0;30;47m手动输入hwnd(进程名前的数字):\033[0m"))
                 self.game_title = self.hwnd_title[self.game_hwnd]
-            self.subHandle = win32gui.FindWindowEx(
-                int(self.game_hwnd), 0, None, None)
-            self.game_hwnd = self.subHandle
+            self.game_pid = win32process.GetWindowThreadProcessId(self.game_hwnd)[1]
+            if psutil.Process(self.game_pid).name().lower() != 'nox.exe':
+                self.subHandle = win32gui.FindWindowEx(
+                    int(self.game_hwnd), 0, None, None)
+                self.game_hwnd = self.subHandle
 
         try:
             setHwnd()
@@ -342,6 +347,8 @@ def mouse_click(hwnd, position):
     hwnd = int(hwnd)
     p = win32api.MAKELONG(position[0], position[1])
     win32gui.SendMessage(hwnd, win32con.WM_ACTIVATE, win32con.WA_ACTIVE, 0)
+    win32gui.SendMessage(hwnd, win32con.WM_MOUSEMOVE, 0, p)
+    win32gui.SendMessage(hwnd, win32con.WM_MOUSEHOVER, 0, p)
     win32api.SendMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, p)
     sleep(0.1)
     win32api.SendMessage(hwnd, win32con.WM_LBUTTONUP, win32con.MK_LBUTTON, p)
